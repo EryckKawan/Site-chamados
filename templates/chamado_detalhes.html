@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+
+{% block title %}Chamado #{{ chamado.id }} - Sistema de Chamados TI{% endblock %}
+{% block page_title %}Chamado #{{ chamado.id }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Main Content -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold">
+                    <i class="bi bi-ticket-detailed"></i> {{ chamado.titulo }}
+                </h6>
+                <div>
+                    <span class="badge bg-{{ chamado.prioridade_class }} me-2">
+                        {{ chamado.prioridade.title() }}
+                    </span>
+                    <span class="badge bg-{{ chamado.status_class }}">
+                        {{ chamado.status.replace('_', ' ').title() }}
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">
+                            <i class="bi bi-info-circle"></i> Informações Básicas
+                        </h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>ID:</strong></td>
+                                <td>#{{ chamado.id }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Categoria:</strong></td>
+                                <td>
+                                    <span class="badge bg-info">{{ chamado.categoria.title() }}</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Criado por:</strong></td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                            <i class="bi bi-person text-white"></i>
+                                        </div>
+                                        {{ chamado.criador.username }}
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Data Criação:</strong></td>
+                                <td>{{ chamado.data_criacao|format_date("%d/%m/%Y às %H:%M") }}</td>
+                            </tr>
+                            {% if chamado.data_atualizacao != chamado.data_criacao %}
+                            <tr>
+                                <td><strong>Última Atualização:</strong></td>
+                                <td>{{ chamado.data_atualizacao|format_date("%d/%m/%Y às %H:%M") }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if chamado.data_resolucao %}
+                            <tr>
+                                <td><strong>Data Resolução:</strong></td>
+                                <td>{{ chamado.data_resolucao|format_date("%d/%m/%Y às %H:%M") }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6 class="text-primary">
+                            <i class="bi bi-gear"></i> Gerenciamento
+                        </h6>
+                        <table class="table table-sm">
+                            {% if chamado.tecnico %}
+                            <tr>
+                                <td><strong>Atribuído para:</strong></td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-success rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                            <i class="bi bi-person-check text-white"></i>
+                                        </div>
+                                        {{ chamado.tecnico.username }}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% if chamado.equipamento %}
+                            <tr>
+                                <td><strong>Equipamento:</strong></td>
+                                <td>
+                                    <a href="{{ url_for('infra.visualizar', id=chamado.equipamento.id) }}" class="text-decoration-none">
+                                        <i class="bi bi-hdd"></i> {{ chamado.equipamento.nome }}
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <td><strong>Tempo Aberto:</strong></td>
+                                <td>
+                                    {% set tempo = chamado.tempo_aberto %}
+                                    {% if tempo.days > 0 %}
+                                        {{ tempo.days }} dia(s)
+                                    {% elif tempo.seconds > 3600 %}
+                                        {{ (tempo.seconds // 3600) }} hora(s)
+                                    {% else %}
+                                        {{ (tempo.seconds // 60) }} minuto(s)
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h6 class="text-primary">
+                        <i class="bi bi-file-text"></i> Descrição
+                    </h6>
+                    <div class="bg-light p-3 rounded">
+                        {{ chamado.descricao | replace('\n', '<br>') | safe }}
+                    </div>
+                </div>
+                
+                {% if chamado.solucao %}
+                <div class="mb-4">
+                    <h6 class="text-success">
+                        <i class="bi bi-lightbulb"></i> Solução
+                    </h6>
+                    <div class="bg-success bg-opacity-10 p-3 rounded border border-success">
+                        {{ chamado.solucao | replace('\n', '<br>') | safe }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Actions Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">
+                    <i class="bi bi-lightning"></i> Ações
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('chamado.editar', id=chamado.id) }}" class="btn btn-warning">
+                        <i class="bi bi-pencil"></i> Editar Chamado
+                    </a>
+                    
+                    {% if session.role in ['admin', 'tech'] and not chamado.atribuido_para %}
+                    <button type="button" class="btn btn-success" onclick="atribuirChamado({{ chamado.id }})">
+                        <i class="bi bi-person-check"></i> Atribuir para Mim
+                    </button>
+                    {% endif %}
+                    
+                    {% if session.role in ['admin', 'tech'] and chamado.status == 'aberto' %}
+                    <button type="button" class="btn btn-info" onclick="alterarStatus({{ chamado.id }}, 'em_andamento')">
+                        <i class="bi bi-play-circle"></i> Iniciar Atendimento
+                    </button>
+                    {% endif %}
+                    
+                    {% if session.role in ['admin', 'tech'] and chamado.status == 'em_andamento' %}
+                    <button type="button" class="btn btn-success" onclick="alterarStatus({{ chamado.id }}, 'resolvido')">
+                        <i class="bi bi-check-circle"></i> Marcar como Resolvido
+                    </button>
+                    {% endif %}
+                    
+                    <a href="{{ url_for('chamado.index') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Voltar à Lista
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Status Timeline -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">
+                    <i class="bi bi-clock-history"></i> Histórico
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-primary"></div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1">Chamado Criado</h6>
+                            <p class="text-muted small mb-0">{{ chamado.data_criacao|format_date('%d/%m/%Y %H:%M') }}</p>
+                            <small class="text-muted">por {{ chamado.criador.username }}</small>
+                        </div>
+                    </div>
+                    
+                    {% if chamado.atribuido_para %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-success"></div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1">Chamado Atribuído</h6>
+                            <p class="text-muted small mb-0">Atribuído para {{ chamado.tecnico.username }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if chamado.status == 'em_andamento' %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-warning"></div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1">Em Andamento</h6>
+                            <p class="text-muted small mb-0">Chamado em atendimento</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if chamado.data_resolucao %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-success"></div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1">Resolvido</h6>
+                            <p class="text-muted small mb-0">{{ chamado.data_resolucao|format_date('%d/%m/%Y %H:%M') }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Equipment Info -->
+        {% if chamado.equipamento %}
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">
+                    <i class="bi bi-hdd"></i> Equipamento
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <span class="me-2" style="font-size: 1.5rem;">{{ chamado.equipamento.tipo_icon }}</span>
+                    <div>
+                        <h6 class="mb-0">{{ chamado.equipamento.nome }}</h6>
+                        <small class="text-muted">{{ chamado.equipamento.tipo.title() }}</small>
+                    </div>
+                </div>
+                
+                <div class="row mb-2">
+                    <div class="col-6">
+                        <small class="text-muted">Status:</small>
+                        <div>
+                            <span class="badge bg-{{ chamado.equipamento.status_class }}">
+                                {{ chamado.equipamento.status.title() }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Localização:</small>
+                        <div class="fw-bold">{{ chamado.equipamento.localizacao }}</div>
+                    </div>
+                </div>
+                
+                {% if chamado.equipamento.marca %}
+                <div class="row mb-2">
+                    <div class="col-6">
+                        <small class="text-muted">Marca:</small>
+                        <div class="fw-bold">{{ chamado.equipamento.marca }}</div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Modelo:</small>
+                        <div class="fw-bold">{{ chamado.equipamento.modelo or 'N/A' }}</div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('infra.visualizar', id=chamado.equipamento.id) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-eye"></i> Ver Equipamento
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Status Change Modal -->
+<div class="modal fade" id="statusModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Alterar Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Deseja alterar o status deste chamado?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="confirmStatusChange">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -22px;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px #dee2e6;
+}
+
+.timeline-content h6 {
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function atribuirChamado(chamadoId) {
+    if (confirm('Deseja atribuir este chamado para você?')) {
+        fetch('/chamados/api/atribuir', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                chamado_id: chamadoId,
+                tecnico_id: {{ session.user_id }}
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erro ao atribuir chamado: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Erro ao atribuir chamado');
+        });
+    }
+}
+
+function alterarStatus(chamadoId, novoStatus) {
+    const statusModal = new bootstrap.Modal(document.getElementById('statusModal'));
+    document.getElementById('confirmStatusChange').onclick = function() {
+        // Here you would typically make an API call to update the status
+        // For now, we'll redirect to the edit page
+        window.location.href = "{{ url_for('chamado.editar', id=0) }}".replace('0', chamadoId);
+    };
+    statusModal.show();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Sistema de Chamados TI{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Page-specific override: force 4-column stats layout to avoid external CSS conflicts -->
+<style>
+    /* Scoped to this page */
+    .dashboard-stats-override { display:flex !important; flex-wrap:wrap !important; margin-left:-0.5rem; margin-right:-0.5rem; }
+    .dashboard-stats-override .stat-col { box-sizing:border-box !important; padding-left:0.5rem !important; padding-right:0.5rem !important; flex:0 0 25% !important; max-width:25% !important; }
+    @media (max-width: 767.98px) { .dashboard-stats-override .stat-col { flex:0 0 50% !important; max-width:50% !important; } }
+</style>
+
+<!-- Stats Cards -->
+    <style>
+        /* Ensure charts appear side-by-side on md+ */
+                .charts-row { display:flex; flex-wrap:wrap; margin-left:-0.5rem; margin-right:-0.5rem; }
+                .charts-row > .col-md-6 { box-sizing:border-box; padding-left:0.5rem; padding-right:0.5rem; flex:0 0 50%; max-width:50%; }
+                @media (max-width: 767.98px) { .charts-row > .col-md-6 { flex:0 0 100%; max-width:100%; } }
+    </style>
+<div class="row mb-4 stats-row">
+    <div class="col-6 col-md-3 mb-4 stat-col">
+        <div class="card stats-card h-100">
+            <div class="card-body">
+                <div class="row g-0 align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total de Chamados
+                        </div>
+                        <div class="stats-number">{{ total_chamados }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-ticket-detailed text-primary" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-6 col-md-3 mb-4 stat-col">
+        <div class="card stats-card h-100">
+            <div class="card-body">
+                <div class="row g-0 align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Chamados Abertos
+                        </div>
+                        <div class="stats-number text-warning">{{ chamados_abertos }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-exclamation-circle text-warning" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-6 col-md-3 mb-4 stat-col">
+        <div class="card stats-card h-100">
+            <div class="card-body">
+                <div class="row g-0 align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Em Andamento
+                        </div>
+                        <div class="stats-number text-info">{{ chamados_em_andamento }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-clock text-info" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-6 col-md-3 mb-4 stat-col">
+        <div class="card stats-card h-100">
+            <div class="card-body">
+                <div class="row g-0 align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Resolvidos
+                        </div>
+                        <div class="stats-number text-success">{{ chamados_resolvidos }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Charts Row -->
+    <div class="col-lg-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">
+                    <i class="bi bi-activity"></i> Atividade Recente
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="timeline" style="max-height: 400px; overflow-y: auto;">
+                    {% if chamados_recentes %}
+                        {% for chamado in chamados_recentes[:10] %}
+                        <div class="timeline-item mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="bi bi-ticket text-white"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">{{ chamado.titulo[:60] }}{% if chamado.titulo|length > 60 %}...{% endif %}</h6>
+                                    <p class="text-muted mb-1 small">{{ chamado.data_criacao|format_date('%d/%m/%Y %H:%M') }}</p>
+                                    <span class="badge bg-primary">{{ chamado.prioridade.title() }}</span>
+                                    <span class="badge bg-secondary">{{ chamado.status.replace('_', ' ').title() }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">Nenhum chamado recente encontrado.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- My Tickets (for regular users) -->
+    {% if meus_chamados %}
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">
+                    <i class="bi bi-person-lines-fill"></i> Meus Chamados
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Título</th>
+                                <th>Status</th>
+                                <th>Prioridade</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for chamado in meus_chamados %}
+                            <tr>
+                                <td>#{{ chamado.id }}</td>
+                                <td>
+                                    <a href="{{ url_for('visualizar_chamado', id=chamado.id) }}" class="text-decoration-none">
+                                        {{ chamado.titulo[:30] }}{% if chamado.titulo|length > 30 %}...{% endif %}
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ chamado.status_class }}">
+                                        {{ chamado.status.replace('_', ' ').title() }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ chamado.prioridade_class }}">
+                                        {{ chamado.prioridade.title() }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-center">
+                    <a href="{{ url_for('chamados') }}" class="btn btn-primary btn-sm">
+                        Ver Todos os Chamados
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Assigned Tickets (for techs) -->
+    {% if chamados_atribuidos %}
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">
+                    <i class="bi bi-person-check"></i> Chamados Atribuídos
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Título</th>
+                                <th>Status</th>
+                                <th>Prioridade</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for chamado in chamados_atribuidos %}
+                            <tr>
+                                <td>#{{ chamado.id }}</td>
+                                <td>
+                                    <a href="{{ url_for('visualizar_chamado', id=chamado.id) }}" class="text-decoration-none">
+                                        {{ chamado.titulo[:30] }}{% if chamado.titulo|length > 30 %}...{% endif %}
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ chamado.status_class }}">
+                                        {{ chamado.status.replace('_', ' ').title() }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ chamado.prioridade_class }}">
+                                        {{ chamado.prioridade.title() }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-center">
+                    <a href="{{ url_for('chamados') }}" class="btn btn-primary btn-sm">
+                        Gerenciar Chamados
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Equipment Problems -->
+    {% if equipamentos_problemas %}
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">
+                    <i class="bi bi-exclamation-triangle"></i> Equipamentos com Mais Problemas
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+                    {% if equipamentos_problemas %}
+                        {% for equipamento in equipamentos_problemas[:5] %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ equipamento.nome }}</h6>
+                                <small class="text-muted">{{ equipamento.total_chamados }} chamado(s)</small>
+                            </div>
+                            <span class="badge bg-danger rounded-pill">{{ equipamento.total_chamados }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">Nenhum equipamento com problemas encontrado.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">
+                    <i class="bi bi-lightning"></i> Ações Rápidas
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('novo_chamado') }}" class="btn btn-primary w-100">
+                            <i class="bi bi-plus-circle"></i> Novo Chamado
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('chamados') }}" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-list-ul"></i> Ver Chamados
+                        </a>
+                    </div>
+                    {% if session.role in ['admin', 'tech'] %}
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('novo_equipamento') }}" class="btn btn-outline-success w-100">
+                            <i class="bi bi-hdd"></i> Cadastrar Equipamento
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('infraestrutura') }}" class="btn btn-outline-info w-100">
+                            <i class="bi bi-gear"></i> Infraestrutura
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-refresh stats every 30 seconds (disabled for now)
+// setInterval(function() {
+//     fetch('/dashboard/api/stats')
+//         .then(response => response.json())
+//         .then(data => {
+//             // Update stats numbers if needed
+//             console.log('Stats updated:', data);
+//         })
+//         .catch(error => console.error('Error updating stats:', error));
+// }, 30000);
+</script>
+{% endblock %}

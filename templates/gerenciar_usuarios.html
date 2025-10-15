@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Usuários{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-people"></i> Gerenciar Usuários</h2>
+                <div>
+                    <a href="{{ url_for('configuracoes') }}" class="btn btn-secondary me-2">
+                        <i class="bi bi-arrow-left"></i> Voltar
+                    </a>
+                    <a href="{{ url_for('register') }}" class="btn btn-primary">
+                        <i class="bi bi-person-plus"></i> Novo Usuário
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="bi bi-list"></i> Lista de Usuários</h5>
+                </div>
+                <div class="card-body">
+                    {% if usuarios %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nome de Usuário</th>
+                                    <th>Email</th>
+                                    <th>Função</th>
+                                    <th>Status</th>
+                                    <th>Data de Criação</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for usuario in usuarios %}
+                                <tr>
+                                    <td>{{ usuario.id }}</td>
+                                    <td>
+                                        <strong>{{ usuario.username }}</strong>
+                                        {% if usuario.id == session.user_id %}
+                                            <span class="badge bg-primary ms-1">Você</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ usuario.email }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'danger' if usuario.role == 'admin' else ('warning' if usuario.role == 'tech' else 'info') }}">{{ role_label(usuario.role) }}</span>
+                                    </td>
+                                    <td>
+                                        {% if usuario.is_active %}
+                                            <span class="badge bg-success">Ativo</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inativo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ usuario.created_at_fmt }}</td>
+                                    <td>
+                                        <div class="btn-group" role="group" aria-label="Ações">
+                                            <a href="{{ url_for('editar_usuario', id=usuario.id) }}" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-pencil"></i> Editar
+                                            </a>
+                                            {% if usuario.id != session.user_id %}
+                                                <form method="POST" action="{{ url_for('toggle_usuario', id=usuario.id) }}" class="d-inline">
+                                                    {% if usuario.is_active %}
+                                                        <button type="submit" class="btn btn-sm btn-warning" 
+                                                                onclick="return confirm('Tem certeza que deseja desativar este usuário?')">
+                                                            <i class="bi bi-person-x"></i>
+                                                        </button>
+                                                    {% else %}
+                                                        <button type="submit" class="btn btn-sm btn-success" 
+                                                                onclick="return confirm('Tem certeza que deseja ativar este usuário?')">
+                                                            <i class="bi bi-person-check"></i>
+                                                        </button>
+                                                    {% endif %}
+                                                </form>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-people fs-1 text-muted"></i>
+                        <h5 class="text-muted mt-3">Nenhum usuário encontrado</h5>
+                        <p class="text-muted">Não há usuários cadastrados no sistema.</p>
+                        <a href="{{ url_for('register') }}" class="btn btn-primary">
+                            <i class="bi bi-person-plus"></i> Criar Primeiro Usuário
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estatísticas Rápidas -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h4>{{ usuarios|length }}</h4>
+                    <p class="mb-0">Total de Usuários</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h4>{{ usuarios|selectattr('is_active')|list|length }}</h4>
+                    <p class="mb-0">Usuários Ativos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h4>{{ usuarios|selectattr('role', 'equalto', 'tech')|list|length }}</h4>
+                    <p class="mb-0">{{ role_label('tech') }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h4>{{ usuarios|selectattr('role', 'equalto', 'admin')|list|length }}</h4>
+                    <p class="mb-0">{{ role_label('admin') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Confirmação para ações perigosas
+document.querySelectorAll('form[action*="toggle_usuario"]').forEach(form => {
+    form.addEventListener('submit', function(e) {
+        const button = this.querySelector('button[type="submit"]');
+        const action = button.textContent.includes('Desativar') ? 'desativar' : 'ativar';
+        
+        if (!confirm(`Tem certeza que deseja ${action} este usuário?`)) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}

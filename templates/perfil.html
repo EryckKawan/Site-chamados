@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Perfil do Usuário{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-person-circle"></i> Meu Perfil</h2>
+                <a href="{{ url_for('editar_perfil') }}" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> Editar Perfil
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Informações do Usuário -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="bi bi-person"></i> Informações Pessoais</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>Nome de Usuário:</strong></div>
+                        <div class="col-sm-8">{{ user.username }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>Email:</strong></div>
+                        <div class="col-sm-8">{{ user.email }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>Função:</strong></div>
+                        <div class="col-sm-8">
+                            <span class="badge bg-{{ 'danger' if user.role == 'admin' else ('warning' if user.role == 'tech' else 'info') }}">{{ role_label(user.role) }}</span>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>Membro desde:</strong></div>
+                        <div class="col-sm-8">{{ user.created_at_fmt }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>Status:</strong></div>
+                        <div class="col-sm-8">
+                            {% if user.is_active %}
+                                <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inativo</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estatísticas do Usuário -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="bi bi-graph-up"></i> Minhas Estatísticas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="border-end">
+                                <h3 class="text-primary">{{ total_chamados }}</h3>
+                                <p class="text-muted mb-0">Total de Chamados</p>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border-end">
+                                <h3 class="text-warning">{{ chamados_abertos }}</h3>
+                                <p class="text-muted mb-0">Chamados Abertos</p>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <h3 class="text-success">{{ chamados_resolvidos }}</h3>
+                            <p class="text-muted mb-0">Resolvidos</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ações Rápidas -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="bi bi-lightning"></i> Ações Rápidas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('novo_chamado') }}" class="btn btn-primary w-100">
+                                <i class="bi bi-plus-circle"></i><br>
+                                Novo Chamado
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('chamados') }}" class="btn btn-info w-100">
+                                <i class="bi bi-list-ul"></i><br>
+                                Meus Chamados
+                            </a>
+                        </div>
+                        {% if session.role in ['admin', 'tech'] %}
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('infraestrutura') }}" class="btn btn-success w-100">
+                                <i class="bi bi-hdd-network"></i><br>
+                                Infraestrutura
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% if session.role == 'admin' %}
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('configuracoes') }}" class="btn btn-warning w-100">
+                                <i class="bi bi-gear"></i><br>
+                                Configurações
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

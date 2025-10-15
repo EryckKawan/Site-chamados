@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}Chamados - Sistema de Chamados TI{% endblock %}
+{% block page_title %}Gerenciar Chamados{% endblock %}
+
+{% block content %}
+<!-- Filters and Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <form method="GET" class="row g-3">
+                            <div class="col-md-3">
+                                <select name="status" class="form-select">
+                                    <option value="">Todos os Status</option>
+                                    <option value="aberto" {% if status_filter == 'aberto' %}selected{% endif %}>Aberto</option>
+                                    <option value="em_andamento" {% if status_filter == 'em_andamento' %}selected{% endif %}>Em Andamento</option>
+                                    <option value="resolvido" {% if status_filter == 'resolvido' %}selected{% endif %}>Resolvido</option>
+                                    <option value="fechado" {% if status_filter == 'fechado' %}selected{% endif %}>Fechado</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select name="prioridade" class="form-select">
+                                    <option value="">Todas as Prioridades</option>
+                                    <option value="baixa" {% if prioridade_filter == 'baixa' %}selected{% endif %}>Baixa</option>
+                                    <option value="media" {% if prioridade_filter == 'media' %}selected{% endif %}>Média</option>
+                                    <option value="alta" {% if prioridade_filter == 'alta' %}selected{% endif %}>Alta</option>
+                                    <option value="critica" {% if prioridade_filter == 'critica' %}selected{% endif %}>Crítica</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select name="categoria" class="form-select">
+                                    <option value="">Todas as Categorias</option>
+                                    {% for categoria in categorias %}
+                                    <option value="{{ categoria }}" {% if categoria_filter == categoria %}selected{% endif %}>
+                                        {{ categoria.title() }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-funnel"></i> Filtrar
+                                </button>
+                                <a href="{{ url_for('chamados') }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle"></i> Limpar
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <a href="{{ url_for('novo_chamado') }}" class="btn btn-success">
+                            <i class="bi bi-plus-circle"></i> Novo Chamado
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chamados Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">
+                    <i class="bi bi-ticket-detailed"></i> Lista de Chamados
+                    <span class="badge bg-primary ms-2">{{ chamados.total }} total</span>
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                {% if chamados.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Título</th>
+                                <th>Categoria</th>
+                                <th>Prioridade</th>
+                                <th>Status</th>
+                                <th>Criado por</th>
+                                <th>Atribuído para</th>
+                                <th>Data Criação</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for chamado in chamados.items %}
+                            <tr>
+                                <td>
+                                    <strong>#{{ chamado.id }}</strong>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-column">
+                                        <span class="fw-bold">{{ chamado.titulo[:50] }}{% if chamado.titulo|length > 50 %}...{% endif %}</span>
+                                        <small class="text-muted">{{ chamado.descricao[:100] }}{% if chamado.descricao|length > 100 %}...{% endif %}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ chamado.categoria.title() }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ chamado.prioridade_class }}">
+                                        {{ chamado.prioridade.title() }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ chamado.status_class }}">
+                                        {{ chamado.status.replace('_', ' ').title() }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                            <i class="bi bi-person text-white"></i>
+                                        </div>
+                                        <span>{{ chamado.criador.username }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if chamado.tecnico %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-success rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                            <i class="bi bi-person-check text-white"></i>
+                                        </div>
+                                        <span>{{ chamado.tecnico.username }}</span>
+                                    </div>
+                                    {% else %}
+                                    <span class="text-muted">Não atribuído</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-column">
+                                        <span>{{ chamado.data_criacao|format_date('%d/%m/%Y') }}</span>
+                                        <small class="text-muted">{{ chamado.data_criacao|format_date('%H:%M') }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('visualizar_chamado', id=chamado.id) }}" 
+                                           class="btn btn-sm btn-outline-primary" 
+                                           title="Visualizar">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('editar_chamado', id=chamado.id) }}" 
+                                           class="btn btn-sm btn-outline-warning" 
+                                           title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        {% if session.role == 'admin' %}
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-danger" 
+                                                onclick="confirmDelete({{ chamado.id }})"
+                                                title="Deletar">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                {% if chamados.pages > 1 %}
+                <div class="card-footer">
+                    <nav aria-label="Navegação de páginas">
+                        <ul class="pagination justify-content-center mb-0">
+                            {% if chamados.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('chamados', page=chamados.prev_num, status=status_filter, prioridade=prioridade_filter, categoria=categoria_filter) }}">
+                                    <i class="bi bi-chevron-left"></i> Anterior
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for page_num in chamados.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != chamados.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('chamados', page=page_num, status=status_filter, prioridade=prioridade_filter, categoria=categoria_filter) }}">
+                                            {{ page_num }}
+                                        </a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                    {% endif %}
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if chamados.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('chamados', page=chamados.next_num, status=status_filter, prioridade=prioridade_filter, categoria=categoria_filter) }}">
+                                    Próximo <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+                
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+                    <h5 class="text-muted mt-3">Nenhum chamado encontrado</h5>
+                    <p class="text-muted">Não há chamados que correspondam aos filtros selecionados.</p>
+                    <a href="{{ url_for('novo_chamado') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Criar Primeiro Chamado
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle text-danger"></i> Confirmar Exclusão
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja deletar este chamado?</p>
+                <p class="text-muted small">Esta ação não pode ser desfeita.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Deletar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmDelete(chamadoId) {
+    const deleteForm = document.getElementById('deleteForm');
+    deleteForm.action = "{{ url_for('deletar_chamado', id=0) }}".replace('0', chamadoId);
+    
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+}
+
+// Auto-refresh page every 5 minutes
+setTimeout(function() {
+    location.reload();
+}, 300000);
+</script>
+{% endblock %}

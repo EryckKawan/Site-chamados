@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if equipamento else 'Novo' }} Equipamento - Sistema de Chamados TI{% endblock %}
+{% block page_title %}{{ 'Editar' if equipamento else 'Novo' }} Equipamento{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">
+                    <i class="bi bi-{{ 'pencil' if equipamento else 'plus-circle' }}"></i>
+                    {{ 'Editar' if equipamento else 'Cadastrar' }} Equipamento
+                </h6>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="nome" class="form-label">
+                                <i class="bi bi-tag"></i> Nome do Equipamento *
+                            </label>
+                            <input type="text" class="form-control" id="nome" name="nome" 
+                                   value="{{ equipamento.nome if equipamento else '' }}" required>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="tipo" class="form-label">
+                                <i class="bi bi-grid"></i> Tipo *
+                            </label>
+                            <select class="form-select" id="tipo" name="tipo" required>
+                                <option value="">Selecione o tipo</option>
+                                <option value="computador" {% if equipamento and equipamento.tipo == 'computador' %}selected{% endif %}>Computador</option>
+                                <option value="impressora" {% if equipamento and equipamento.tipo == 'impressora' %}selected{% endif %}>Impressora</option>
+                                <option value="servidor" {% if equipamento and equipamento.tipo == 'servidor' %}selected{% endif %}>Servidor</option>
+                                <option value="roteador" {% if equipamento and equipamento.tipo == 'roteador' %}selected{% endif %}>Roteador</option>
+                                <option value="switch" {% if equipamento and equipamento.tipo == 'switch' %}selected{% endif %}>Switch</option>
+                                <option value="telefone" {% if equipamento and equipamento.tipo == 'telefone' %}selected{% endif %}>Telefone</option>
+                                <option value="monitor" {% if equipamento and equipamento.tipo == 'monitor' %}selected{% endif %}>Monitor</option>
+                                <option value="outros" {% if equipamento and equipamento.tipo == 'outros' %}selected{% endif %}>Outros</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="marca" class="form-label">
+                                <i class="bi bi-award"></i> Marca
+                            </label>
+                            <input type="text" class="form-control" id="marca" name="marca" 
+                                   value="{{ equipamento.marca if equipamento else '' }}">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="modelo" class="form-label">
+                                <i class="bi bi-cpu"></i> Modelo
+                            </label>
+                            <input type="text" class="form-control" id="modelo" name="modelo" 
+                                   value="{{ equipamento.modelo if equipamento else '' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="numero_serie" class="form-label">
+                                <i class="bi bi-upc-scan"></i> Número de Série
+                            </label>
+                            <input type="text" class="form-control" id="numero_serie" name="numero_serie" 
+                                   value="{{ equipamento.numero_serie if equipamento else '' }}">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="data_aquisicao" class="form-label">
+                                <i class="bi bi-calendar"></i> Data de Aquisição
+                            </label>
+                            <input type="date" class="form-control" id="data_aquisicao" name="data_aquisicao" 
+                                   value="{{ equipamento.data_aquisicao|format_date('%Y-%m-%d') if equipamento and equipamento.data_aquisicao else '' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="localizacao" class="form-label">
+                                <i class="bi bi-geo-alt"></i> Localização *
+                            </label>
+                            <input type="text" class="form-control" id="localizacao" name="localizacao" 
+                                   value="{{ equipamento.localizacao if equipamento else '' }}" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="responsavel" class="form-label">
+                                <i class="bi bi-person"></i> Responsável
+                            </label>
+                            <input type="text" class="form-control" id="responsavel" name="responsavel" 
+                                   value="{{ equipamento.responsavel if equipamento else '' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="status" class="form-label">
+                                <i class="bi bi-check-circle"></i> Status *
+                            </label>
+                            <select class="form-select" id="status" name="status" required>
+                                <option value="ativo" {% if equipamento and equipamento.status == 'ativo' %}selected{% endif %}>Ativo</option>
+                                <option value="inativo" {% if equipamento and equipamento.status == 'inativo' %}selected{% endif %}>Inativo</option>
+                                <option value="manutencao" {% if equipamento and equipamento.status == 'manutencao' %}selected{% endif %}>Manutenção</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="observacoes" class="form-label">
+                            <i class="bi bi-file-text"></i> Observações
+                        </label>
+                        <textarea class="form-control" id="observacoes" name="observacoes" rows="4" 
+                                  placeholder="Informações adicionais sobre o equipamento...">{{ equipamento.observacoes if equipamento else '' }}</textarea>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('infra.index') }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Voltar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-{{ 'check' if equipamento else 'plus' }}"></i>
+                            {{ 'Atualizar' if equipamento else 'Cadastrar' }} Equipamento
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-save draft functionality
+const form = document.querySelector('form');
+const inputs = form.querySelectorAll('input, select, textarea');
+
+// Load saved draft
+function loadDraft() {
+    const draft = localStorage.getItem('infra_draft');
+    if (draft && !{{ 'true' if equipamento else 'false' }}) {
+        const data = JSON.parse(draft);
+        Object.keys(data).forEach(key => {
+            const input = form.querySelector(`[name="${key}"]`);
+            if (input) {
+                input.value = data[key];
+            }
+        });
+    }
+}
+
+// Save draft
+function saveDraft() {
+    const data = {};
+    inputs.forEach(input => {
+        if (input.name && input.value) {
+            data[input.name] = input.value;
+        }
+    });
+    localStorage.setItem('infra_draft', JSON.stringify(data));
+}
+
+// Clear draft on successful submit
+form.addEventListener('submit', function() {
+    localStorage.removeItem('infra_draft');
+});
+
+// Auto-save every 30 seconds
+setInterval(saveDraft, 30000);
+
+// Load draft on page load
+document.addEventListener('DOMContentLoaded', loadDraft);
+
+// Update icon preview when type changes
+document.getElementById('tipo').addEventListener('change', function() {
+    const icons = {
+        'computador': '💻',
+        'impressora': '🖨️',
+        'servidor': '🖥️',
+        'roteador': '📡',
+        'switch': '🔌',
+        'telefone': '📞',
+        'monitor': '🖥️',
+        'outros': '⚙️'
+    };
+    
+    const icon = icons[this.value] || '⚙️';
+    // You could update a preview element here if needed
+});
+</script>
+{% endblock %}
