@@ -206,10 +206,13 @@ def to_datetime_filter(value):
     return None
 
 # Configuração do banco de dados
-DATABASE = 'chamados_ti.db'
+import os
+DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'chamados_ti.db')
 
 def init_db():
     """Inicializa o banco de dados"""
+    # Garantir que o diretório existe
+    os.makedirs(os.path.dirname(DATABASE) if os.path.dirname(DATABASE) else '.', exist_ok=True)
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
     
@@ -1455,4 +1458,11 @@ if __name__ == '__main__':
     print("🚀 Sistema de Chamados TI iniciado!")
     print("📱 Acesse: http://127.0.0.1:5000")
     print("🔑 Login: Exponencial / 1234")
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    
+    # Detectar se está em produção (Render, Heroku, etc)
+    import os
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_ENV') != 'production'
+    host = '0.0.0.0' if not debug else '127.0.0.1'
+    
+    app.run(debug=debug, host=host, port=port)
