@@ -76,3 +76,4 @@ def register():
             flash('Erro ao criar usuário!', 'danger')
     
     return render_template('login.html', show_register=True)
+

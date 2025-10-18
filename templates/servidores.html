@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+
+{% block title %}Servidores{% endblock %}
+
+{% block content %}
+<style>
+    /* Garantir que dropdowns apareçam corretamente */
+    .card-body {
+        overflow: visible !important;
+    }
+    
+    .table-responsive {
+        overflow: visible !important;
+    }
+    
+    /* Garantir que o dropdown fique acima de outros elementos */
+    .dropdown-menu {
+        z-index: 1050 !important;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="bi bi-server"></i> Servidores
+        </h1>
+        {% if session.role in ['admin', 'tech'] %}
+        <a href="{{ url_for('servidor.novo') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Novo Servidor
+        </a>
+        {% endif %}
+    </div>
+
+    {% include 'includes/flash_messages.html' %}
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-hdd-rack"></i> Lista de Servidores
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if servidores %}
+                    <div class="table-responsive" style="overflow: visible;">
+                        <table class="table table-hover" id="dataTable" width="100%" cellspacing="0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>IP</th>
+                                    <th>Localização</th>
+                                    <th>Espaço Total</th>
+                                    <th>Espaço Usado</th>
+                                    <th>% Livre</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for servidor in servidores %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('servidor.visualizar', id=servidor.id) }}" class="text-decoration-none">
+                                            <i class="bi bi-server"></i> {{ servidor.nome }}
+                                        </a>
+                                    </td>
+                                    <td>{{ servidor.ip }}</td>
+                                    <td>{{ servidor.localizacao }}</td>
+                                    <td>
+                                        <strong>{{ servidor.espaco_total }} {{ servidor.unidade }}</strong>
+                                        <div class="dropdown d-inline">
+                                            <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" 
+                                                    id="dropdownTotal{{ servidor.id }}" 
+                                                    data-bs-toggle="dropdown" 
+                                                    aria-expanded="false"
+                                                    title="Ver conversões">
+                                                <i class="bi bi-arrow-repeat"></i>
+                                            </button>
+                                            <ul class="dropdown-menu" aria-labelledby="dropdownTotal{{ servidor.id }}">
+                                                <li><h6 class="dropdown-header"><i class="bi bi-hdd"></i> Espaço Total</h6></li>
+                                                <li><a class="dropdown-item {% if servidor.unidade == 'MB' %}active{% endif %}" href="#">
+                                                    <i class="bi bi-check-circle"></i> {{ "%.2f"|format(servidor.espaco_total_em('MB')) }} MB
+                                                </a></li>
+                                                <li><a class="dropdown-item {% if servidor.unidade == 'GB' %}active{% endif %}" href="#">
+                                                    <i class="bi bi-check-circle"></i> {{ "%.2f"|format(servidor.espaco_total_em('GB')) }} GB
+                                                </a></li>
+                                                <li><a class="dropdown-item {% if servidor.unidade == 'TB' %}active{% endif %}" href="#">
+                                                    <i class="bi bi-check-circle"></i> {{ "%.2f"|format(servidor.espaco_total_em('TB')) }} TB
+                                                </a></li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong>{{ servidor.espaco_usado }} {{ servidor.unidade }}</strong>
+                                        <div class="dropdown d-inline">
+                                            <button class="btn btn-sm btn-outline-warning dropdown-toggle" type="button" 
+                                                    id="dropdownUsado{{ servidor.id }}" 
+                                                    data-bs-toggle="dropdown" 
+                                                    aria-expanded="false"
+                                                    title="Ver conversões">
+                                                <i class="bi bi-arrow-repeat"></i>
+                                            </button>
+                                            <ul class="dropdown-menu" aria-labelledby="dropdownUsado{{ servidor.id }}">
+                                                <li><h6 class="dropdown-header"><i class="bi bi-exclamation-circle"></i> Espaço Usado</h6></li>
+                                                <li><a class="dropdown-item {% if servidor.unidade == 'MB' %}active{% endif %}" href="#">
+                                                    <i class="bi bi-check-circle"></i> {{ "%.2f"|format(servidor.espaco_usado_em('MB')) }} MB
+                                                </a></li>
+                                                <li><a class="dropdown-item {% if servidor.unidade == 'GB' %}active{% endif %}" href="#">
+                                                    <i class="bi bi-check-circle"></i> {{ "%.2f"|format(servidor.espaco_usado_em('GB')) }} GB
+                                                </a></li>
+                                                <li><a class="dropdown-item {% if servidor.unidade == 'TB' %}active{% endif %}" href="#">
+                                                    <i class="bi bi-check-circle"></i> {{ "%.2f"|format(servidor.espaco_usado_em('TB')) }} TB
+                                                </a></li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% set porcentagem_livre = ((servidor.espaco_total - servidor.espaco_usado) / servidor.espaco_total * 100) if servidor.espaco_total > 0 else 0 %}
+                                        {% set porcentagem_livre = porcentagem_livre|round(2) %}
+                                        
+                                        <div class="progress">
+                                            {% if porcentagem_livre > 50 %}
+                                                {% set cor = "success" %}
+                                            {% elif porcentagem_livre > 20 %}
+                                                {% set cor = "warning" %}
+                                            {% else %}
+                                                {% set cor = "danger" %}
+                                            {% endif %}
+                                            
+                                            <div class="progress-bar bg-{{ cor }}" role="progressbar" 
+                                                 style="width: {{ porcentagem_livre }}%" 
+                                                 aria-valuenow="{{ porcentagem_livre }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                                {{ porcentagem_livre }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('servidor.visualizar', id=servidor.id) }}" class="btn btn-sm btn-info">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            {% if session.role in ['admin', 'tech'] %}
+                                            <a href="{{ url_for('servidor.editar', id=servidor.id) }}" class="btn btn-sm btn-warning">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-danger" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#deleteModal{{ servidor.id }}">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Modal de confirmação de exclusão -->
+                                        <div class="modal fade" id="deleteModal{{ servidor.id }}" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="deleteModalLabel">Confirmar Exclusão</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        Tem certeza que deseja excluir o servidor <strong>{{ servidor.nome }}</strong>?
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                        <form action="{{ url_for('servidor.excluir', id=servidor.id) }}" method="post">
+                                                            <button type="submit" class="btn btn-danger">Excluir</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-server text-muted" style="font-size: 3rem;"></i>
+                        <p class="mt-3 text-muted">Nenhum servidor cadastrado.</p>
+                        {% if session.role in ['admin', 'tech'] %}
+                        <a href="{{ url_for('servidor.novo') }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Adicionar Servidor
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Inicializar DataTable
+        $('#dataTable').DataTable({
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json"
+            }
+        });
+        
+        // Testar se Bootstrap está carregado
+        if (typeof bootstrap === 'undefined') {
+            console.error('Bootstrap não está carregado!');
+        } else {
+            console.log('Bootstrap carregado com sucesso');
+            
+            // Inicializar manualmente todos os dropdowns
+            var dropdownElementList = [].slice.call(document.querySelectorAll('[data-bs-toggle="dropdown"]'));
+            var dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
+                return new bootstrap.Dropdown(dropdownToggleEl);
+            });
+            
+            console.log('Dropdowns inicializados:', dropdownList.length);
+        }
+    });
+</script>
+{% endblock %}

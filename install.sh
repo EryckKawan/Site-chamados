@@ -45,3 +45,4 @@ echo "  3. Acesse: http://127.0.0.1:5000"
 echo
 echo "Login padrão: admin / admin123"
 echo
+

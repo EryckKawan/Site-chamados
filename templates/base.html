@@ -232,6 +232,29 @@
                                 Infraestrutura
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint.startswith('servidor') %}active{% endif %}" 
+                               href="{{ url_for('servidor.listar') }}">
+                                <i class="bi bi-server"></i>
+                                Servidores
+                            </a>
+                        </li>
+                        {% if session.role == 'admin' %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint.startswith('funcao') %}active{% endif %}" 
+                               href="{{ url_for('funcao.listar_funcoes') }}">
+                                <i class="bi bi-person-badge"></i>
+                                Funções
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint.startswith('role') %}active{% endif %}" 
+                               href="{{ url_for('role.index') }}">
+                                <i class="bi bi-person-gear"></i>
+                                Gerenciar Cargos
+                            </a>
+                        </li>
+                        {% endif %}
                         {% if session.role in ['admin', 'tech'] %}
                         <li class="nav-item">
                             <a class="nav-link" href="#" onclick="openChat()">

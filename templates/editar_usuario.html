@@ -25,12 +25,26 @@
                             <input type="email" name="email" class="form-control" value="{{ usuario.email }}" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Função</label>
-                            <select name="role" class="form-select">
+                            <label for="role" class="form-label">Função</label>
+                            <select class="form-select" id="role" name="role">
                                 <option value="user" {% if usuario.role == 'user' %}selected{% endif %}>Usuário</option>
                                 <option value="tech" {% if usuario.role == 'tech' %}selected{% endif %}>Técnico</option>
                                 <option value="admin" {% if usuario.role == 'admin' %}selected{% endif %}>Administrador</option>
                             </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="funcao_id" class="form-label">Função/Cargo</label>
+                            <select class="form-select" id="funcao_id" name="funcao_id">
+                                {% for funcao in funcoes %}
+                                <option value="{{ funcao.id }}" {% if usuario.funcao_id == funcao.id %}selected{% endif %}>
+                                    {{ funcao.nome }} (Nível {{ funcao.nivel_acesso }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                A função determina o nível de acesso do usuário no sistema.
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Nova Senha (deixe em branco para manter a atual)</label>

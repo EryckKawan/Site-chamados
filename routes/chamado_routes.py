@@ -179,3 +179,36 @@ def api_atribuir():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': 'Erro ao atribuir chamado'}), 500
+
+@chamado_bp.route('/excluir/<int:id>', methods=['POST'])
+@login_required
+def excluir(id):
+    """Excluir chamado"""
+    chamado = Chamado.query.get_or_404(id)
+    
+    # Verificar permissão
+    # Admin pode excluir qualquer chamado
+    # Usuário comum só pode excluir seus próprios chamados se ainda estiver em 'aberto'
+    pode_excluir = False
+    
+    if current_user.is_admin:
+        pode_excluir = True
+    elif chamado.criado_por == current_user.id and chamado.status == 'aberto':
+        pode_excluir = True
+    
+    if not pode_excluir:
+        flash('Você não tem permissão para excluir este chamado!', 'danger')
+        return redirect(url_for('chamado.visualizar', id=id))
+    
+    numero_chamado = chamado.id
+    titulo = chamado.titulo
+    
+    try:
+        db.session.delete(chamado)
+        db.session.commit()
+        flash(f'Chamado #{numero_chamado} - "{titulo}" excluído com sucesso!', 'success')
+        return redirect(url_for('chamado.index'))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao excluir chamado: {str(e)}', 'danger')
+        return redirect(url_for('chamado.visualizar', id=id))

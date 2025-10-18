@@ -46,3 +46,4 @@ class Infraestrutura(db.Model):
             'outros': '⚙️'
         }
         return icons.get(self.tipo.lower(), '⚙️')
+

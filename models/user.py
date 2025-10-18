@@ -10,7 +10,6 @@ class User(UserMixin, db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(120), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='user')  # admin, user, tech
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -36,3 +35,10 @@ class User(UserMixin, db.Model):
     @property
     def is_tech(self):
         return self.role in ['admin', 'tech']
+    
+    @property
+    def can_manage_roles(self):
+        """Verifica se o usuário pode gerenciar cargos e permissões"""
+        # Apenas admin ou usuário com role 'role_manager' pode gerenciar cargos
+        return self.role in ['admin', 'role_manager']
+

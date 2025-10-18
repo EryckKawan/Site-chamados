@@ -4,9 +4,17 @@ from datetime import datetime
 import sqlite3
 import os
 import math
+from routes.servidor_routes import servidor_bp
+from routes.funcao_routes import funcao_bp
+from routes.role_routes import role_bp
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'sua-chave-secreta-aqui'
+
+# Registrando blueprints
+app.register_blueprint(servidor_bp)
+app.register_blueprint(funcao_bp)
+app.register_blueprint(role_bp)
 
 class Pagination:
     """Simple pagination class to mimic Flask-SQLAlchemy pagination"""
@@ -174,6 +182,31 @@ def format_date_filter(value, format='%d/%m/%Y'):
     # For any other type, return as string
     return str(value)
 
+# Custom Jinja2 filter to convert string to datetime
+@app.template_filter('to_datetime')
+def to_datetime_filter(value):
+    """Convert string to datetime object, handling various formats"""
+    if value is None:
+        return None
+    
+    # If it's already a datetime object
+    if isinstance(value, datetime):
+        return value
+    
+    # If it's a string, try to parse it
+    if isinstance(value, str):
+        for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+            try:
+                return datetime.strptime(value, fmt)
+            except ValueError:
+                continue
+        try:
+            return datetime.fromisoformat(value)
+        except Exception:
+            return None
+    
+    return None
+
 # Configuração do banco de dados
 DATABASE = 'chamados_ti.db'
 
@@ -244,13 +277,13 @@ def init_db():
     ''')
     
     # Criar usuário admin se não existir
-    cursor.execute('SELECT COUNT(*) FROM users WHERE username = ?', ('admin',))
+    cursor.execute('SELECT COUNT(*) FROM users WHERE username = ?', ('Exponencial',))
     if cursor.fetchone()[0] == 0:
-        admin_password = generate_password_hash('admin123')
+        admin_password = generate_password_hash('1234')
         cursor.execute('''
-            INSERT INTO users (username, email, password_hash, role)
-            VALUES (?, ?, ?, ?)
-        ''', ('admin', 'ti@exponencialconsultoria.com.br', admin_password, 'admin'))
+            INSERT INTO users (username, password_hash, role)
+            VALUES (?, ?, ?)
+        ''', ('Exponencial', admin_password, 'admin'))
     # Ensure default role labels exist
     defaults = {
         'admin': 'Administrador',
@@ -716,17 +749,30 @@ def deletar_chamado(id):
         conn.close()
         return redirect(url_for('chamados'))
     
-    # Apenas admin pode deletar
-    if session['role'] != 'admin':
-        flash('Acesso negado!', 'danger')
+    # Verificar permissão:
+    # Admin pode deletar qualquer chamado
+    # Usuário comum só pode deletar seus próprios chamados se estiverem em 'aberto'
+    pode_deletar = False
+    
+    if session['role'] == 'admin':
+        pode_deletar = True
+    elif chamado['criado_por'] == session['user_id'] and chamado['status'] == 'aberto':
+        pode_deletar = True
+    
+    if not pode_deletar:
+        flash('Você não tem permissão para excluir este chamado!', 'danger')
         conn.close()
-        return redirect(url_for('chamados'))
+        return redirect(url_for('visualizar_chamado', id=id))
+    
+    # Salvar informações para a mensagem
+    numero_chamado = chamado['id']
+    titulo = chamado['titulo']
     
     conn.execute('DELETE FROM chamados WHERE id = ?', (id,))
     conn.commit()
     conn.close()
     
-    flash('Chamado deletado com sucesso!', 'success')
+    flash(f'Chamado #{numero_chamado} - "{titulo}" excluído com sucesso!', 'success')
     return redirect(url_for('chamados'))
 
 @app.route('/infraestrutura')
@@ -1172,11 +1218,17 @@ def gerenciar_usuarios():
     
     conn = get_db_connection()
     usuarios_raw = conn.execute('''
-        SELECT id, username, email, role, created_at, is_active
-        FROM users
-        ORDER BY created_at DESC
+        SELECT u.id, u.username, u.email, u.role, u.created_at, u.is_active, u.funcao_id, f.nome as funcao_nome
+        FROM users u
+        LEFT JOIN funcoes f ON u.funcao_id = f.id
+        ORDER BY u.created_at DESC
     ''').fetchall()
+    
+    # Buscar todas as funções disponíveis
+    funcoes = conn.execute('SELECT * FROM funcoes ORDER BY nivel_acesso DESC').fetchall()
     conn.close()
+    
+    return render_template('gerenciar_usuarios.html', usuarios=usuarios_raw, funcoes=funcoes)
 
     # Converter created_at (string) para datetime quando possível, para que o template possa usar .strftime
     from datetime import datetime
@@ -1320,5 +1372,5 @@ if __name__ == '__main__':
     init_db()
     print("🚀 Sistema de Chamados TI iniciado!")
     print("📱 Acesse: http://127.0.0.1:5000")
-    print("🔑 Login: admin / admin123")
+    print("🔑 Login: Exponencial / 1234")
     app.run(debug=True, host='127.0.0.1', port=5000)

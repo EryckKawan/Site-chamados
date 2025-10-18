@@ -82,3 +82,4 @@ class Chamado(db.Model):
             'fechado': 'secondary'
         }
         return classes.get(self.status, 'secondary')
+

@@ -201,3 +201,31 @@ def api_status():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': 'Erro ao atualizar status'}), 500
+
+@infra_bp.route('/excluir/<int:id>', methods=['POST'])
+@login_required
+def excluir(id):
+    """Excluir equipamento de infraestrutura"""
+    # Verificar permissão (apenas admin pode excluir)
+    if not current_user.is_admin:
+        flash('Apenas administradores podem excluir equipamentos!', 'danger')
+        return redirect(url_for('infra.index'))
+    
+    equipamento = Infraestrutura.query.get_or_404(id)
+    nome_equipamento = equipamento.nome
+    
+    try:
+        # Verificar se há chamados associados
+        if equipamento.chamados:
+            flash(f'Não é possível excluir "{nome_equipamento}" pois há {len(equipamento.chamados)} chamado(s) associado(s)!', 'warning')
+            return redirect(url_for('infra.visualizar', id=id))
+        
+        db.session.delete(equipamento)
+        db.session.commit()
+        flash(f'Equipamento "{nome_equipamento}" excluído com sucesso!', 'success')
+        return redirect(url_for('infra.index'))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao excluir equipamento: {str(e)}', 'danger')
+        return redirect(url_for('infra.visualizar', id=id))
+

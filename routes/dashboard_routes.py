@@ -83,3 +83,4 @@ def api_stats():
         'equipamentos_manutencao': Infraestrutura.query.filter_by(status='manutencao').count()
     }
     return jsonify(stats)
+

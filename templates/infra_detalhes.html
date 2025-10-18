@@ -180,6 +180,12 @@
                     <button type="button" class="btn btn-success" onclick="alterarStatus({{ equipamento.id }}, 'ativo')">
                         <i class="bi bi-check-circle"></i> Marcar Ativo
                     </button>
+                    
+                    {% if session.role == 'admin' %}
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                        <i class="bi bi-trash"></i> Excluir Equipamento
+                    </button>
+                    {% endif %}
                     {% endif %}
                     
                     <a href="{{ url_for('chamado.novo') }}?equipamento_id={{ equipamento.id }}" class="btn btn-primary">
@@ -257,7 +263,9 @@
                     </div>
                     <div class="col-6">
                         <h4 class="text-success mb-0">
-                            {% set dias_ativo = (equipamento.updated_at - equipamento.created_at).days %}
+                            {% set updated_at = equipamento.updated_at|to_datetime if equipamento.updated_at is string else equipamento.updated_at %}
+                            {% set created_at = equipamento.created_at|to_datetime if equipamento.created_at is string else equipamento.created_at %}
+                            {% set dias_ativo = (updated_at - created_at).days if updated_at and created_at else 0 %}
                             {{ dias_ativo }}
                         </h4>
                         <small class="text-muted">Dias Ativo</small>
@@ -269,7 +277,9 @@
                 <div class="text-center">
                     <small class="text-muted">Idade do Equipamento</small>
                     <h6 class="mb-0">
-                        {% set idade = (equipamento.updated_at.date() - equipamento.data_aquisicao).days %}
+                        {% set updated_at = equipamento.updated_at|to_datetime if equipamento.updated_at is string else equipamento.updated_at %}
+                        {% set data_aquisicao = equipamento.data_aquisicao|to_datetime if equipamento.data_aquisicao is string else equipamento.data_aquisicao %}
+                        {% set idade = (updated_at.date() - data_aquisicao.date()).days if updated_at and data_aquisicao else 0 %}
                         {% if idade > 365 %}
                             {{ (idade // 365) }} ano(s)
                         {% elif idade > 30 %}
@@ -375,4 +385,43 @@ function alterarStatus(equipamentoId, novoStatus) {
     statusModal.show();
 }
 </script>
+
+<!-- Modal de Confirmação de Exclusão -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="bi bi-exclamation-triangle"></i> Confirmar Exclusão
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Atenção!</strong> Você está prestes a excluir o equipamento:</p>
+                <p class="text-center">
+                    <strong class="text-danger">{{ equipamento.nome }}</strong>
+                </p>
+                {% if equipamento.chamados %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Este equipamento possui <strong>{{ equipamento.chamados|length }} chamado(s)</strong> associado(s).
+                    A exclusão não será possível até que todos os chamados sejam resolvidos ou desassociados.
+                </div>
+                {% else %}
+                <p>Esta ação não pode ser desfeita. Todos os dados relacionados a este equipamento serão permanentemente removidos.</p>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                {% if not equipamento.chamados %}
+                <form action="{{ url_for('infra.excluir', id=equipamento.id) }}" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Sim, Excluir
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -157,6 +157,12 @@
                     </button>
                     {% endif %}
                     
+                    {% if session.role == 'admin' or (chamado.criado_por == session.user_id and chamado.status == 'aberto') %}
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                        <i class="bi bi-trash"></i> Excluir Chamado
+                    </button>
+                    {% endif %}
+                    
                     {% if session.role in ['admin', 'tech'] and chamado.status == 'aberto' %}
                     <button type="button" class="btn btn-info" onclick="alterarStatus({{ chamado.id }}, 'em_andamento')">
                         <i class="bi bi-play-circle"></i> Iniciar Atendimento
@@ -381,4 +387,42 @@ function alterarStatus(chamadoId, novoStatus) {
     statusModal.show();
 }
 </script>
+
+<!-- Modal de Confirmação de Exclusão -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="bi bi-exclamation-triangle"></i> Confirmar Exclusão
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Atenção!</strong> Você está prestes a excluir o chamado:</p>
+                <p class="text-center">
+                    <strong class="text-danger">#{{ chamado.id }} - {{ chamado.titulo }}</strong>
+                </p>
+                <p>Esta ação não pode ser desfeita. Todos os dados relacionados a este chamado serão permanentemente removidos.</p>
+                
+                {% if session.role != 'admin' and chamado.status != 'aberto' %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Você só pode excluir chamados com status "Aberto".
+                </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                {% if session.role == 'admin' or (chamado.criado_por == session.user_id and chamado.status == 'aberto') %}
+                <form action="{{ url_for('chamado.deletar', id=chamado.id) }}" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Sim, Excluir
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
