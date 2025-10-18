@@ -294,6 +294,19 @@ def init_db():
     for k, v in defaults.items():
         cursor.execute('INSERT OR IGNORE INTO role_names (role_key, label) VALUES (?, ?)', (k, v))
     
+    # Tabela de mensagens do chat
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS chat_mensagens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            username TEXT NOT NULL,
+            mensagem TEXT NOT NULL,
+            data_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            lida BOOLEAN DEFAULT 0,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+    
     conn.commit()
     conn.close()
 
@@ -1348,26 +1361,105 @@ def editar_usuario(id):
     conn.close()
     return render_template('editar_usuario.html', usuario=usuario)
 
-@app.route('/api/chat', methods=['POST'])
-def chat_api():
-    """Endpoint para futura integração com OpenAI API"""
+# ==========================================
+# CHAT DE SUPORTE - Estilo WhatsApp
+# ==========================================
+
+@app.route('/chat')
+@login_required
+def chat():
+    """Página principal do chat"""
+    return render_template('chat.html')
+
+@app.route('/api/chat/mensagens', methods=['GET'])
+@login_required
+def get_mensagens():
+    """Obter mensagens do chat"""
+    conn = get_db_connection()
+    
+    # Pegar últimas 100 mensagens
+    mensagens = conn.execute('''
+        SELECT id, user_id, username, mensagem, data_envio, lida
+        FROM chat_mensagens
+        ORDER BY data_envio DESC
+        LIMIT 100
+    ''').fetchall()
+    
+    conn.close()
+    
+    # Converter para lista (ordem cronológica)
+    mensagens_list = []
+    for msg in reversed(mensagens):
+        mensagens_list.append({
+            'id': msg['id'],
+            'user_id': msg['user_id'],
+            'username': msg['username'],
+            'mensagem': msg['mensagem'],
+            'data_envio': msg['data_envio'],
+            'lida': msg['lida'],
+            'is_me': msg['user_id'] == session.get('user_id')
+        })
+    
+    return jsonify({'mensagens': mensagens_list})
+
+@app.route('/api/chat/enviar', methods=['POST'])
+@login_required
+def enviar_mensagem():
+    """Enviar mensagem no chat"""
     data = request.get_json()
-    message = data.get('message', '').lower()
+    mensagem = data.get('mensagem', '').strip()
     
-    # Respostas simuladas para mensagens comuns
-    responses = {
-        'resetar impressora': 'Para resetar a impressora: 1) Desligue a impressora, 2) Aguarde 30 segundos, 3) Ligue novamente, 4) Teste imprimindo uma página de teste.',
-        'senha': 'Para redefinir senha, acesse o portal do usuário ou entre em contato com o suporte técnico.',
-        'email': 'Problemas com email podem ser resolvidos verificando as configurações do Outlook ou acessando o webmail.',
-        'internet': 'Para problemas de internet, verifique se o cabo de rede está conectado e tente reiniciar o roteador.',
-        'computador lento': 'Para melhorar a performance: 1) Reinicie o computador, 2) Feche programas desnecessários, 3) Execute limpeza de disco.',
-    }
+    if not mensagem:
+        return jsonify({'error': 'Mensagem vazia'}), 400
     
-    for keyword, response in responses.items():
-        if keyword in message:
-            return jsonify({'response': response})
+    conn = get_db_connection()
     
-    return jsonify({'response': 'Não encontrei uma resposta automática para sua pergunta. Um técnico entrará em contato em breve.'})
+    # Inserir mensagem
+    conn.execute('''
+        INSERT INTO chat_mensagens (user_id, username, mensagem)
+        VALUES (?, ?, ?)
+    ''', (session['user_id'], session['username'], mensagem))
+    
+    conn.commit()
+    
+    # Pegar a mensagem inserida
+    msg = conn.execute('''
+        SELECT id, user_id, username, mensagem, data_envio, lida
+        FROM chat_mensagens
+        WHERE id = last_insert_rowid()
+    ''').fetchone()
+    
+    conn.close()
+    
+    return jsonify({
+        'success': True,
+        'mensagem': {
+            'id': msg['id'],
+            'user_id': msg['user_id'],
+            'username': msg['username'],
+            'mensagem': msg['mensagem'],
+            'data_envio': msg['data_envio'],
+            'is_me': True
+        }
+    })
+
+@app.route('/api/chat/marcar-lidas', methods=['POST'])
+@login_required
+def marcar_lidas():
+    """Marcar mensagens como lidas"""
+    conn = get_db_connection()
+    
+    # Marcar todas as mensagens como lidas (exceto as do próprio usuário)
+    conn.execute('''
+        UPDATE chat_mensagens
+        SET lida = 1
+        WHERE user_id != ? AND lida = 0
+    ''', (session['user_id'],))
+    
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True})
 
 # ==========================================
 # GERENCIAMENTO DE CARGOS

@@ -255,14 +255,13 @@
                             </a>
                         </li>
                         {% endif %}
-                        {% if session.role in ['admin', 'tech'] %}
                         <li class="nav-item">
-                            <a class="nav-link" href="#" onclick="openChat()">
-                                <i class="bi bi-chat-dots"></i>
+                            <a class="nav-link {% if request.endpoint == 'chat' %}active{% endif %}" 
+                               href="{{ url_for('chat') }}">
+                                <i class="bi bi-chat-dots-fill"></i>
                                 Chat Suporte
                             </a>
                         </li>
-                        {% endif %}
                         <li class="nav-item mt-3">
                             <a class="nav-link" href="{{ url_for('logout') }}">
                                 <i class="bi bi-box-arrow-right"></i>
