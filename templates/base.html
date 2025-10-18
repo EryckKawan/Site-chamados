@@ -248,8 +248,8 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint.startswith('role') %}active{% endif %}" 
-                               href="{{ url_for('role.index') }}">
+                            <a class="nav-link {% if request.endpoint == 'gerenciar_cargos' %}active{% endif %}" 
+                               href="{{ url_for('gerenciar_cargos') }}">
                                 <i class="bi bi-person-gear"></i>
                                 Gerenciar Cargos
                             </a>

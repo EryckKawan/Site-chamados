@@ -31,8 +31,8 @@ def admin_required(f):
         user = conn.execute('SELECT * FROM users WHERE id = ?', (session['user_id'],)).fetchone()
         conn.close()
         
-        # Verificar se o usuário é administrador ou tem nível de acesso 5 (Diretor)
-        if not (user['is_admin'] == 1 or user['funcao_id'] == 1):  # 1 = Diretor (nível mais alto)
+        # Verificar se o usuário é administrador ou tem função de Diretor
+        if not (user['role'] == 'admin' or user['funcao_id'] == 1):  # 1 = Diretor (nível mais alto)
             flash('Você não tem permissão para acessar esta página.', 'danger')
             return redirect(url_for('dashboard'))
             

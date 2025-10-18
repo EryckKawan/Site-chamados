@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}Funções e Cargos{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="bi bi-person-badge"></i> Funções e Cargos
+        </h1>
+        {% if session.role == 'admin' %}
+        <a href="{{ url_for('funcao.adicionar_funcao') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nova Função
+        </a>
+        {% endif %}
+    </div>
+
+    {% include 'includes/flash_messages.html' %}
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-list"></i> Lista de Funções
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if funcoes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nome</th>
+                                    <th>Nível de Acesso</th>
+                                    <th>Descrição</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for funcao in funcoes %}
+                                <tr>
+                                    <td>{{ funcao.id }}</td>
+                                    <td>
+                                        <strong>{{ funcao.nome }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">Nível {{ funcao.nivel_acesso }}</span>
+                                    </td>
+                                    <td>{{ funcao.descricao or '-' }}</td>
+                                    <td>
+                                        {% if session.role == 'admin' %}
+                                        <a href="{{ url_for('funcao.editar_funcao', id=funcao.id) }}" class="btn btn-sm btn-warning">
+                                            <i class="bi bi-pencil"></i> Editar
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-danger" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#deleteModal{{ funcao.id }}">
+                                            <i class="bi bi-trash"></i> Excluir
+                                        </button>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+
+                                <!-- Modal de Exclusão -->
+                                <div class="modal fade" id="deleteModal{{ funcao.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-danger text-white">
+                                                <h5 class="modal-title">
+                                                    <i class="bi bi-exclamation-triangle"></i> Confirmar Exclusão
+                                                </h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p>Tem certeza que deseja excluir a função <strong>{{ funcao.nome }}</strong>?</p>
+                                                <p class="text-muted">Esta ação não pode ser desfeita.</p>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                <form action="{{ url_for('funcao.excluir_funcao', id=funcao.id) }}" method="POST" style="display: inline;">
+                                                    <button type="submit" class="btn btn-danger">
+                                                        <i class="bi bi-trash"></i> Sim, Excluir
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Nenhuma função cadastrada.
+                        {% if session.role == 'admin' %}
+                        <a href="{{ url_for('funcao.adicionar_funcao') }}" class="btn btn-sm btn-primary ms-2">
+                            <i class="bi bi-plus-circle"></i> Criar Primeira Função
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-info-circle"></i> Sobre Funções
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p>
+                        As funções representam os cargos organizacionais da empresa e podem ser atribuídas aos usuários.
+                        Cada função possui um nível de acesso que determina certas permissões no sistema.
+                    </p>
+                    <h6>Níveis de Acesso:</h6>
+                    <ul>
+                        <li><strong>Nível 5:</strong> Diretor - Acesso completo</li>
+                        <li><strong>Nível 4:</strong> Gerente - Acesso avançado</li>
+                        <li><strong>Nível 3:</strong> Coordenador - Acesso intermediário</li>
+                        <li><strong>Nível 2:</strong> Analista - Acesso básico</li>
+                        <li><strong>Nível 1:</strong> Assistente - Acesso limitado</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

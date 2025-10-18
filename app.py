@@ -6,7 +6,6 @@ import os
 import math
 from routes.servidor_routes import servidor_bp
 from routes.funcao_routes import funcao_bp
-from routes.role_routes import role_bp
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'sua-chave-secreta-aqui'
@@ -14,7 +13,6 @@ app.config['SECRET_KEY'] = 'sua-chave-secreta-aqui'
 # Registrando blueprints
 app.register_blueprint(servidor_bp)
 app.register_blueprint(funcao_bp)
-app.register_blueprint(role_bp)
 
 class Pagination:
     """Simple pagination class to mimic Flask-SQLAlchemy pagination"""
@@ -1367,6 +1365,90 @@ def chat_api():
             return jsonify({'response': response})
     
     return jsonify({'response': 'Não encontrei uma resposta automática para sua pergunta. Um técnico entrará em contato em breve.'})
+
+# ==========================================
+# GERENCIAMENTO DE CARGOS
+# ==========================================
+
+# Definição dos cargos e suas permissões
+ROLES_CONFIG = {
+    'admin': {
+        'label': 'Administrador',
+        'description': 'Acesso total ao sistema',
+        'permissions': ['Gerenciar usuários', 'Gerenciar cargos', 'Gerenciar chamados', 'Deletar registros'],
+        'color': 'danger',
+        'icon': 'bi-shield-fill-exclamation'
+    },
+    'role_manager': {
+        'label': 'Gerente de Cargos',
+        'description': 'Pode gerenciar cargos de usuários',
+        'permissions': ['Gerenciar cargos', 'Visualizar usuários'],
+        'color': 'primary',
+        'icon': 'bi-person-gear'
+    },
+    'tech': {
+        'label': 'Técnico',
+        'description': 'Gerenciar chamados e infraestrutura',
+        'permissions': ['Gerenciar chamados', 'Gerenciar infraestrutura', 'Gerenciar servidores'],
+        'color': 'info',
+        'icon': 'bi-wrench'
+    },
+    'user': {
+        'label': 'Usuário',
+        'description': 'Criar e visualizar próprios chamados',
+        'permissions': ['Criar chamados', 'Ver próprios chamados'],
+        'color': 'secondary',
+        'icon': 'bi-person'
+    }
+}
+
+@app.route('/gerenciar-cargos')
+@login_required
+def gerenciar_cargos():
+    """Página para gerenciar cargos"""
+    if session.get('role') != 'admin':
+        flash('Apenas administradores podem gerenciar cargos!', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    conn = get_db_connection()
+    usuarios = conn.execute('SELECT * FROM users ORDER BY username').fetchall()
+    conn.close()
+    
+    return render_template('gerenciar_cargos.html', usuarios=usuarios, roles=ROLES_CONFIG)
+
+@app.route('/alterar-cargo/<int:user_id>', methods=['POST'])
+@login_required
+def alterar_cargo(user_id):
+    """Altera o cargo de um usuário"""
+    if session.get('role') != 'admin':
+        flash('Apenas administradores podem alterar cargos!', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    novo_cargo = request.form.get('cargo')
+    
+    if novo_cargo not in ROLES_CONFIG:
+        flash('Cargo inválido!', 'danger')
+        return redirect(url_for('gerenciar_cargos'))
+    
+    if user_id == session.get('user_id'):
+        flash('Você não pode alterar seu próprio cargo!', 'warning')
+        return redirect(url_for('gerenciar_cargos'))
+    
+    conn = get_db_connection()
+    user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+    
+    if not user:
+        flash('Usuário não encontrado!', 'danger')
+        conn.close()
+        return redirect(url_for('gerenciar_cargos'))
+    
+    cargo_antigo = user['role']
+    conn.execute('UPDATE users SET role = ? WHERE id = ?', (novo_cargo, user_id))
+    conn.commit()
+    conn.close()
+    
+    flash(f'Cargo de {user["username"]} alterado de "{ROLES_CONFIG.get(cargo_antigo, {}).get("label", cargo_antigo)}" para "{ROLES_CONFIG[novo_cargo]["label"]}"!', 'success')
+    return redirect(url_for('gerenciar_cargos'))
 
 if __name__ == '__main__':
     init_db()

@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block title %}Gerenciar Cargos{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="bi bi-person-gear"></i> Gerenciar Cargos dos Usuários
+        </h1>
+    </div>
+
+    {% include 'includes/flash_messages.html' %}
+
+    <!-- Cards de Informação dos Cargos -->
+    <div class="row mb-4">
+        {% for role_key, role_info in roles.items() %}
+        <div class="col-md-4 mb-3">
+            <div class="card shadow h-100 border-{{ role_info.color }}">
+                <div class="card-header bg-{{ role_info.color }} text-white">
+                    <h6 class="m-0">
+                        <i class="{{ role_info.icon }}"></i> {{ role_info.label }}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted">{{ role_info.description }}</p>
+                    <ul class="small mb-0">
+                        {% for perm in role_info.permissions %}
+                        <li>{{ perm }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Lista de Usuários -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-people"></i> Usuários e Seus Cargos
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Usuário</th>
+                                    <th>Cargo Atual</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for usuario in usuarios %}
+                                <tr>
+                                    <td>{{ usuario.id }}</td>
+                                    <td>
+                                        {% if usuario.role in roles %}
+                                        <i class="{{ roles[usuario.role].icon }} text-{{ roles[usuario.role].color }}"></i>
+                                        {% else %}
+                                        <i class="bi bi-person text-secondary"></i>
+                                        {% endif %}
+                                        {{ usuario.username }}
+                                        {% if usuario.id == session.user_id %}
+                                        <span class="badge bg-primary">Você</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if usuario.role in roles %}
+                                        <span class="badge bg-{{ roles[usuario.role].color }}">
+                                            {{ roles[usuario.role].label }}
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ usuario.role }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if usuario.is_active %}
+                                        <span class="badge bg-success">Ativo</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inativo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if usuario.id != session.user_id %}
+                                        <button type="button" class="btn btn-sm btn-primary" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#alterarCargoModal{{ usuario.id }}">
+                                            <i class="bi bi-pencil"></i> Alterar Cargo
+                                        </button>
+                                        {% else %}
+                                        <span class="text-muted small">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+
+                                <!-- Modal para alterar cargo -->
+                                <div class="modal fade" id="alterarCargoModal{{ usuario.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Alterar Cargo de {{ usuario.username }}</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <form method="POST" action="{{ url_for('alterar_cargo', user_id=usuario.id) }}">
+                                                <div class="modal-body">
+                                                    <div class="alert alert-info">
+                                                        <strong>Cargo atual:</strong> 
+                                                        <span class="badge bg-{{ roles[usuario.role].color }}">
+                                                            {{ roles[usuario.role].label }}
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <label for="cargo{{ usuario.id }}" class="form-label">Novo Cargo:</label>
+                                                        <select class="form-select" name="cargo" id="cargo{{ usuario.id }}" required>
+                                                            {% for role_key, role_info in roles.items() %}
+                                                            <option value="{{ role_key }}" {% if role_key == usuario.role %}selected{% endif %}>
+                                                                {{ role_info.label }} - {{ role_info.description }}
+                                                            </option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+
+                                                    <div class="alert alert-warning">
+                                                        <i class="bi bi-exclamation-triangle"></i>
+                                                        <strong>Atenção:</strong> Alterar o cargo afeta imediatamente as permissões do usuário.
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                    <button type="submit" class="btn btn-primary">
+                                                        <i class="bi bi-check-circle"></i> Salvar Alteração
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
