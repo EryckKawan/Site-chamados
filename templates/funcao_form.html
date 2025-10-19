@@ -52,6 +52,18 @@
                             </div>
                         </div>
 
+                        <!-- Checklist de Permissões -->
+                        <div class="mb-4">
+                            <label class="form-label">Permissões por Nível de Acesso</label>
+                            <div class="card">
+                                <div class="card-body">
+                                    <div id="permissions-checklist">
+                                        <!-- Será preenchido via JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="mb-3">
                             <label for="descricao" class="form-label">Descrição</label>
                             <textarea class="form-control" id="descricao" name="descricao" rows="3">{{ funcao.descricao if funcao else '' }}</textarea>
@@ -76,7 +88,108 @@
 </div>
 
 <script>
-    // Validação do formulário
+    // Definir permissões por nível de acesso
+    const permissionsByLevel = {
+        1: { // Usuário
+            title: "👤 Usuário - Acesso Básico",
+            permissions: [
+                { name: "Dashboard", allowed: true, icon: "📊" },
+                { name: "Chamados (apenas próprios)", allowed: true, icon: "🎫" },
+                { name: "Armazenamento de Servidores", allowed: false, icon: "💾" },
+                { name: "Funções/Cargos", allowed: false, icon: "👥" },
+                { name: "Configurações", allowed: false, icon: "⚙️" },
+                { name: "Gerenciar Usuários", allowed: false, icon: "👤" },
+                { name: "Chat de Suporte", allowed: false, icon: "💬" }
+            ]
+        },
+        2: { // Auxiliar Administrativo
+            title: "📋 Auxiliar Administrativo - Gestão de Chamados",
+            permissions: [
+                { name: "Dashboard", allowed: true, icon: "📊" },
+                { name: "Chamados (todos)", allowed: true, icon: "🎫" },
+                { name: "Armazenamento de Servidores", allowed: false, icon: "💾" },
+                { name: "Funções/Cargos", allowed: false, icon: "👥" },
+                { name: "Configurações", allowed: false, icon: "⚙️" },
+                { name: "Gerenciar Usuários", allowed: false, icon: "👤" },
+                { name: "Chat de Suporte", allowed: true, icon: "💬" }
+            ]
+        },
+        3: { // Monitor
+            title: "📊 Monitor - Acesso Intermediário",
+            permissions: [
+                { name: "Dashboard", allowed: true, icon: "📊" },
+                { name: "Chamados (todos)", allowed: true, icon: "🎫" },
+                { name: "Armazenamento de Servidores", allowed: false, icon: "💾" },
+                { name: "Funções/Cargos", allowed: false, icon: "👥" },
+                { name: "Configurações", allowed: false, icon: "⚙️" },
+                { name: "Gerenciar Usuários", allowed: false, icon: "👤" },
+                { name: "Chat de Suporte", allowed: true, icon: "💬" }
+            ]
+        },
+        4: { // Supervisor
+            title: "👨‍🏫 Supervisor - Gestão Técnica",
+            permissions: [
+                { name: "Dashboard", allowed: true, icon: "📊" },
+                { name: "Chamados (todos)", allowed: true, icon: "🎫" },
+                { name: "Armazenamento de Servidores", allowed: true, icon: "💾" },
+                { name: "Funções/Cargos", allowed: false, icon: "👥" },
+                { name: "Configurações", allowed: false, icon: "⚙️" },
+                { name: "Gerenciar Usuários", allowed: false, icon: "👤" },
+                { name: "Chat de Suporte", allowed: true, icon: "💬" }
+            ]
+        },
+        5: { // Diretor/Admin
+            title: "👑 Diretor/Administrador - Acesso Total",
+            permissions: [
+                { name: "Dashboard", allowed: true, icon: "📊" },
+                { name: "Chamados (todos)", allowed: true, icon: "🎫" },
+                { name: "Armazenamento de Servidores", allowed: true, icon: "💾" },
+                { name: "Funções/Cargos", allowed: true, icon: "👥" },
+                { name: "Configurações", allowed: true, icon: "⚙️" },
+                { name: "Gerenciar Usuários", allowed: true, icon: "👤" },
+                { name: "Chat de Suporte", allowed: true, icon: "💬" }
+            ]
+        }
+    };
+
+    // Função para atualizar o checklist
+    function updatePermissionsChecklist(level) {
+        const checklist = document.getElementById('permissions-checklist');
+        const permissionData = permissionsByLevel[level];
+        
+        if (!permissionData) {
+            checklist.innerHTML = '<p class="text-muted">Selecione um nível de acesso para ver as permissões.</p>';
+            return;
+        }
+
+        let html = `
+            <h6 class="text-primary mb-3">${permissionData.title}</h6>
+            <div class="row">
+        `;
+
+        permissionData.permissions.forEach(permission => {
+            const statusClass = permission.allowed ? 'success' : 'danger';
+            const statusIcon = permission.allowed ? '✅' : '❌';
+            const statusText = permission.allowed ? 'Permitido' : 'Negado';
+            
+            html += `
+                <div class="col-md-6 mb-2">
+                    <div class="d-flex align-items-center p-2 border rounded">
+                        <span class="me-2">${permission.icon}</span>
+                        <div class="flex-grow-1">
+                            <small class="fw-bold">${permission.name}</small>
+                        </div>
+                        <span class="badge bg-${statusClass}">${statusIcon} ${statusText}</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        checklist.innerHTML = html;
+    }
+
+    // Validação do formulário e eventos
     (function() {
         'use strict';
         window.addEventListener('load', function() {
@@ -90,7 +203,81 @@
                     form.classList.add('was-validated');
                 }, false);
             });
+
+            // Event listener para mudança no nível de acesso
+            const nivelAcesso = document.getElementById('nivel_acesso');
+            if (nivelAcesso) {
+                nivelAcesso.addEventListener('change', function() {
+                    const level = parseInt(this.value);
+                    updatePermissionsChecklist(level);
+                });
+
+                // Atualizar checklist inicial se já houver um valor selecionado
+                const currentLevel = parseInt(nivelAcesso.value);
+                if (currentLevel) {
+                    updatePermissionsChecklist(currentLevel);
+                }
+            }
         }, false);
     })();
 </script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.permissions-card {
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.permissions-card:hover {
+    border-color: #007bff;
+    box-shadow: 0 4px 8px rgba(0,123,255,0.1);
+}
+
+.permission-item {
+    transition: all 0.2s ease;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+}
+
+.permission-item:hover {
+    background-color: #f8f9fa;
+    border-color: #adb5bd;
+}
+
+.permission-icon {
+    font-size: 1.2rem;
+    margin-right: 8px;
+}
+
+.permission-name {
+    font-weight: 600;
+    color: #495057;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.bg-success {
+    background-color: #198754 !important;
+}
+
+.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+.level-title {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+}
+</style>
 {% endblock %}
