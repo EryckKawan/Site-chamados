@@ -242,13 +242,28 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
 <script>
-let ultimoIdMensagem = 0;
-let chatInterval;
+// Verificar se jQuery está disponível
+if (typeof $ === 'undefined') {
+    console.log('⚠️ jQuery não encontrado, carregando...');
+    const script = document.createElement('script');
+    script.src = 'https://code.jquery.com/jquery-3.6.0.min.js';
+    script.onload = function() {
+        console.log('✅ jQuery carregado');
+        initializeChat();
+    };
+    document.head.appendChild(script);
+} else {
+    console.log('✅ jQuery já disponível');
+    initializeChat();
+}
 
-// Carregar mensagens ao abrir a página
-$(document).ready(function() {
+function initializeChat() {
+    let ultimoIdMensagem = 0;
+    let chatInterval;
+
+    // Carregar mensagens ao abrir a página
+    $(document).ready(function() {
     carregarMensagens();
     marcarComoLidas();
     
@@ -267,7 +282,70 @@ $(document).ready(function() {
     $(window).focus(function() {
         marcarComoLidas();
     });
-});
+}
+
+// Funções globais para os botões HTML
+function enviarMensagem() {
+    const mensagem = document.getElementById('messageInput').value.trim();
+    
+    console.log('📤 Tentando enviar mensagem:', mensagem);
+    
+    if (!mensagem) {
+        console.log('❌ Mensagem vazia, não enviando');
+        return;
+    }
+    
+    // Limpar input
+    document.getElementById('messageInput').value = '';
+    
+    console.log('🔄 Enviando para servidor...');
+    
+    // Enviar para servidor
+    fetch('/api/chat/enviar', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ mensagem: mensagem })
+    })
+    .then(response => {
+        console.log('📡 Resposta do servidor:', response.status);
+        if (response.status === 401) {
+            alert('Sessão expirada. Faça login novamente.');
+            window.location.href = '/login';
+            return;
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('📨 Dados recebidos:', data);
+        if (data && data.success) {
+            console.log('✅ Mensagem enviada com sucesso:', data.mensagem);
+            adicionarMensagemNaTela(data.mensagem);
+            ultimoIdMensagem = data.mensagem.id;
+            scrollToBottom();
+            document.getElementById('noMessages').style.display = 'none';
+        } else if (data && data.error) {
+            console.error('❌ Erro do servidor:', data.error);
+            alert('Erro: ' + data.error);
+        } else {
+            console.error('❌ Resposta inválida do servidor:', data);
+            alert('Resposta inválida do servidor');
+        }
+    })
+    .catch(error => {
+        console.error('❌ Erro ao enviar mensagem:', error);
+        alert('Erro ao enviar mensagem. Tente novamente.');
+    });
+}
+
+function limparChat() {
+    if (confirm('Limpar histórico do chat na sua tela? (Não afeta outros usuários)')) {
+        document.getElementById('chatMessages').innerHTML = '';
+        document.getElementById('noMessages').style.display = 'block';
+        ultimoIdMensagem = 0;
+    }
+}
 
 function carregarMensagens() {
     console.log('🔄 Carregando mensagens...');
@@ -338,59 +416,6 @@ function adicionarMensagemNaTela(msg) {
     }
 }
 
-function enviarMensagem() {
-    const mensagem = $('#messageInput').val().trim();
-    
-    console.log('📤 Tentando enviar mensagem:', mensagem);
-    
-    if (!mensagem) {
-        console.log('❌ Mensagem vazia, não enviando');
-        return;
-    }
-    
-    // Limpar input
-    $('#messageInput').val('');
-    
-    console.log('🔄 Enviando para servidor...');
-    
-    // Enviar para servidor
-    fetch('/api/chat/enviar', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ mensagem: mensagem })
-    })
-    .then(response => {
-        console.log('📡 Resposta do servidor:', response.status);
-        if (response.status === 401) {
-            alert('Sessão expirada. Faça login novamente.');
-            window.location.href = '/login';
-            return;
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log('📨 Dados recebidos:', data);
-        if (data && data.success) {
-            console.log('✅ Mensagem enviada com sucesso:', data.mensagem);
-            adicionarMensagemNaTela(data.mensagem);
-            ultimoIdMensagem = data.mensagem.id;
-            scrollToBottom();
-            $('#noMessages').hide();
-        } else if (data && data.error) {
-            console.error('❌ Erro do servidor:', data.error);
-            alert('Erro: ' + data.error);
-        } else {
-            console.error('❌ Resposta inválida do servidor:', data);
-            alert('Resposta inválida do servidor');
-        }
-    })
-    .catch(error => {
-        console.error('❌ Erro ao enviar mensagem:', error);
-        alert('Erro ao enviar mensagem. Tente novamente.');
-    });
-}
 
 function marcarComoLidas() {
     fetch('/api/chat/marcar-lidas', {
