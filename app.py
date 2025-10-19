@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, timedelta
 import sqlite3
 import os
 import math
@@ -8,7 +8,13 @@ from routes.funcao_routes import funcao_bp
 from routes.servidor_storage_routes import servidor_storage_bp
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'sua-chave-secreta-aqui'
+
+# Configurações de segurança e sessão
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'sua-chave-secreta-super-segura-2024')
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)  # Sessão dura 24 horas
+app.config['SESSION_COOKIE_SECURE'] = False  # True apenas em HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 # Registrando blueprints
 app.register_blueprint(funcao_bp)
@@ -393,6 +399,8 @@ def login():
         conn.close()
         
         if user and check_password_hash(user['password_hash'], password):
+            session.clear()  # Limpar sessão anterior
+            session.permanent = True  # Tornar sessão permanente (usa PERMANENT_SESSION_LIFETIME)
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['role'] = user['role']
