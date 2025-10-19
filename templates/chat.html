@@ -257,31 +257,9 @@ if (typeof $ === 'undefined') {
     initializeChat();
 }
 
-function initializeChat() {
-    let ultimoIdMensagem = 0;
-    let chatInterval;
-
-    // Carregar mensagens ao abrir a página
-    $(document).ready(function() {
-    carregarMensagens();
-    marcarComoLidas();
-    
-    // Atualizar mensagens a cada 3 segundos
-    chatInterval = setInterval(carregarMensagens, 3000);
-    
-    // Enter para enviar
-    $('#messageInput').keypress(function(e) {
-        if(e.which == 13) {
-            enviarMensagem();
-            return false;
-        }
-    });
-    
-    // Marcar como lidas ao focar na janela
-    $(window).focus(function() {
-        marcarComoLidas();
-    });
-}
+// Variáveis globais
+let ultimoIdMensagem = 0;
+let chatInterval;
 
 // Funções globais para os botões HTML
 function enviarMensagem() {
@@ -450,6 +428,30 @@ $(window).on('beforeunload', function() {
         clearInterval(chatInterval);
     }
 });
+
+function initializeChat() {
+    // Carregar mensagens ao abrir a página
+    $(document).ready(function() {
+        carregarMensagens();
+        marcarComoLidas();
+        
+        // Atualizar mensagens a cada 3 segundos
+        chatInterval = setInterval(carregarMensagens, 3000);
+        
+        // Enter para enviar
+        $('#messageInput').keypress(function(e) {
+            if(e.which == 13) {
+                enviarMensagem();
+                return false;
+            }
+        });
+        
+        // Marcar como lidas ao focar na janela
+        $(window).focus(function() {
+            marcarComoLidas();
+        });
+    });
+}
 </script>
 {% endblock %}
 
