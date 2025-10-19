@@ -194,6 +194,18 @@ def init_db():
         )
     ''')
     
+    # Tabela de permissões de usuários
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS user_permissions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            permission_key TEXT NOT NULL,
+            enabled BOOLEAN DEFAULT 1,
+            UNIQUE(user_id, permission_key),
+            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+        )
+    ''')
+    
     # Tabela de chamados
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS chamados (
@@ -311,6 +323,41 @@ def can_access_chat():
     role = get_user_role()
     return role in ['admin', 'diretor', 'supervisor', 'tech', 'administrativo']
 
+def has_permission(permission_key):
+    """
+    Verifica se o usuário atual tem uma permissão específica
+    """
+    if 'user_id' not in session:
+        return False
+    
+    user_id = session.get('user_id')
+    
+    # Admin sempre tem todas as permissões
+    if session.get('role') == 'admin':
+        return True
+    
+    conn = get_db_connection()
+    perm = conn.execute(
+        'SELECT enabled FROM user_permissions WHERE user_id = ? AND permission_key = ?',
+        (user_id, permission_key)
+    ).fetchone()
+    conn.close()
+    
+    return perm is not None and perm['enabled'] == 1
+
+def get_user_permissions(user_id):
+    """
+    Retorna lista de permissões do usuário
+    """
+    conn = get_db_connection()
+    perms = conn.execute(
+        'SELECT permission_key FROM user_permissions WHERE user_id = ? AND enabled = 1',
+        (user_id,)
+    ).fetchall()
+    conn.close()
+    
+    return [p['permission_key'] for p in perms]
+
 # Função para traduzir roles (labels customizáveis) e injetar permissões
 @app.context_processor
 def inject_permissions():
@@ -343,6 +390,7 @@ def inject_permissions():
         can_access_funcoes=can_access_funcoes,
         can_access_configuracoes=can_access_configuracoes,
         can_access_chat=can_access_chat,
+        has_permission=has_permission,
         is_admin=is_admin,
         is_tech=is_tech,
         is_administrativo=is_administrativo
@@ -1074,15 +1122,46 @@ def editar_usuario(id):
             password_hash = generate_password_hash(password)
             conn.execute('UPDATE users SET password_hash = ? WHERE id = ?', (password_hash, id))
 
+        # Salvar permissões granulares
+        permissions = [
+            'view_chamados', 'create_chamados', 'edit_chamados', 'delete_chamados',
+            'assign_chamados', 'manage_infrastructure', 'manage_users', 'access_chat'
+        ]
+        
+        # Remover permissões antigas do usuário
+        conn.execute('DELETE FROM user_permissions WHERE user_id = ?', (id,))
+        
+        # Inserir novas permissões
+        for perm in permissions:
+            field_name = f'permission_{perm}'
+            value = request.form.get(field_name, '0')
+            enabled = 1 if value == '1' else 0
+            
+            if enabled:  # Só salvar permissões ativas
+                conn.execute(
+                    'INSERT INTO user_permissions (user_id, permission_key, enabled) VALUES (?, ?, ?)',
+                    (id, perm, enabled)
+                )
+
         conn.commit()
         conn.close()
-        flash('Usuário atualizado com sucesso!', 'success')
+        flash('Usuário e permissões atualizados com sucesso!', 'success')
         return redirect(url_for('gerenciar_usuarios'))
 
     # Buscar todas as funções disponíveis
     funcoes = conn.execute('SELECT * FROM funcoes ORDER BY nivel_acesso DESC').fetchall()
+    
+    # Buscar permissões do usuário
+    user_permissions = conn.execute(
+        'SELECT permission_key FROM user_permissions WHERE user_id = ? AND enabled = 1',
+        (id,)
+    ).fetchall()
+    
+    # Converter para lista de strings
+    permissions_list = [perm['permission_key'] for perm in user_permissions]
+    
     conn.close()
-    return render_template('editar_usuario.html', usuario=usuario, funcoes=funcoes)
+    return render_template('editar_usuario.html', usuario=usuario, funcoes=funcoes, user_permissions=permissions_list)
 
 # ==========================================
 # CHAT DE SUPORTE - Estilo WhatsApp

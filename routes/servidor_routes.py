@@ -111,7 +111,7 @@ def listar_servidores():
     
     conn.close()
     return render_template('servidores_lista.html', servidores=servidores)
-
+    
 
 @servidor_bp.route('/novo-servidor', methods=['GET', 'POST'])
 @login_required
@@ -152,7 +152,7 @@ def novo_armazenamento(servidor_id):
 
     conn = get_db_connection()
     servidor = conn.execute('SELECT * FROM servidores WHERE id = ?', (servidor_id,)).fetchone()
-
+    
     if not servidor:
         flash('Servidor não encontrado!', 'danger')
         conn.close()
@@ -176,10 +176,10 @@ def novo_armazenamento(servidor_id):
 
         flash('Armazenamento adicionado com sucesso!', 'success')
         return redirect(url_for('servidor.listar_servidores'))
-
+    
     conn.close()
     return render_template('armazenamento_form.html', servidor=servidor, action='novo-armazenamento')
-
+    
 
 @servidor_bp.route('/armazenamento/<int:armazenamento_id>/editar', methods=['GET', 'POST'])
 @login_required
@@ -188,7 +188,7 @@ def editar_armazenamento(armazenamento_id):
     if not can_access_storage():
         flash('Acesso negado! Você não tem permissão para acessar o armazenamento de servidores.', 'danger')
         return redirect(url_for('dashboard'))
-
+    
     conn = get_db_connection()
     armazenamento = conn.execute('''
         SELECT a.*, s.nome as servidor_nome 
@@ -253,7 +253,7 @@ def deletar_armazenamento(armazenamento_id):
     conn.execute('DELETE FROM armazenamentos WHERE id = ?', (armazenamento_id,))
     conn.commit()
     conn.close()
-
+    
     flash(f'Armazenamento "{armazenamento["nome"]}" do servidor "{armazenamento["servidor_nome"]}" deletado com sucesso!', 'success')
     return redirect(url_for('servidor.listar_servidores'))
 
@@ -280,6 +280,6 @@ def deletar_servidor(servidor_id):
     conn.execute('DELETE FROM servidores WHERE id = ?', (servidor_id,))
     conn.commit()
     conn.close()
-
+    
     flash(f'Servidor "{servidor["nome"]}" e todos seus armazenamentos foram deletados com sucesso!', 'success')
     return redirect(url_for('servidor.listar_servidores'))

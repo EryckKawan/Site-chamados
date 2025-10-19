@@ -55,8 +55,198 @@
                             <input type="password" name="password" class="form-control">
                         </div>
 
+                        <!-- Seção de Permissões Granulares -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-shield-lock"></i> Permissões de Acesso
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted mb-3">
+                                    <i class="bi bi-info-circle"></i> Configure individualmente quais funcionalidades este usuário pode acessar
+                                </p>
+                                
+                                <div class="row g-3">
+                                    <!-- Permissão: Visualizar Chamados -->
+                                    <div class="col-md-6">
+                                        <div class="permission-item p-3 border rounded">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="bi bi-ticket-perforated me-2"></i>
+                                                    <strong>Visualizar Chamados</strong>
+                                                    <br>
+                                                    <small class="text-muted">Ver todos os chamados do sistema</small>
+                                                </div>
+                                                {% set is_enabled = 'view_chamados' in user_permissions %}
+                                                <button type="button" class="btn btn-toggle permission-toggle" 
+                                                        data-permission="view_chamados"
+                                                        data-enabled="{{ 'true' if is_enabled else 'false' }}">
+                                                    {% if is_enabled %}
+                                                    <i class="bi bi-check-circle-fill"></i> Permitido
+                                                    {% else %}
+                                                    <i class="bi bi-x-circle-fill"></i> Negado
+                                                    {% endif %}
+                                                </button>
+                                            </div>
+                                            <input type="hidden" name="permission_view_chamados" value="{{ '1' if is_enabled else '0' }}">
+                                        </div>
+                                    </div>
+
+                                    <!-- Permissão: Criar Chamados -->
+                                    <div class="col-md-6">
+                                        <div class="permission-item p-3 border rounded">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="bi bi-plus-circle me-2"></i>
+                                                    <strong>Criar Chamados</strong>
+                                                    <br>
+                                                    <small class="text-muted">Abrir novos chamados</small>
+                                                </div>
+                                                {% set is_enabled = 'create_chamados' in user_permissions %}
+                                                <button type="button" class="btn btn-toggle permission-toggle" 
+                                                        data-permission="create_chamados"
+                                                        data-enabled="{{ 'true' if is_enabled else 'false' }}">
+                                                    {% if is_enabled %}<i class="bi bi-check-circle-fill"></i> Permitido{% else %}<i class="bi bi-x-circle-fill"></i> Negado{% endif %}
+                                                </button>
+                                            </div>
+                                            <input type="hidden" name="permission_create_chamados" value="{{ '1' if is_enabled else '0' }}">
+                                        </div>
+                                    </div>
+
+                                    <!-- Permissão: Editar Chamados -->
+                                    <div class="col-md-6">
+                                        <div class="permission-item p-3 border rounded">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="bi bi-pencil-square me-2"></i>
+                                                    <strong>Editar Chamados</strong>
+                                                    <br>
+                                                    <small class="text-muted">Modificar chamados existentes</small>
+                                                </div>
+                                                {% set is_enabled = 'edit_chamados' in user_permissions %}
+                                                <button type="button" class="btn btn-toggle permission-toggle" 
+                                                        data-permission="edit_chamados"
+                                                        data-enabled="{{ 'true' if is_enabled else 'false' }}">
+                                                    {% if is_enabled %}<i class="bi bi-check-circle-fill"></i> Permitido{% else %}<i class="bi bi-x-circle-fill"></i> Negado{% endif %}
+                                                </button>
+                                            </div>
+                                            <input type="hidden" name="permission_edit_chamados" value="{{ '1' if is_enabled else '0' }}">
+                                        </div>
+                                    </div>
+
+                                    <!-- Permissão: Deletar Chamados -->
+                                    <div class="col-md-6">
+                                        <div class="permission-item p-3 border rounded">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="bi bi-trash me-2"></i>
+                                                    <strong>Deletar Chamados</strong>
+                                                    <br>
+                                                    <small class="text-muted">Excluir chamados do sistema</small>
+                                                </div>
+                                                {% set is_enabled = 'delete_chamados' in user_permissions %}
+                                                <button type="button" class="btn btn-toggle permission-toggle" 
+                                                        data-permission="delete_chamados"
+                                                        data-enabled="{{ 'true' if is_enabled else 'false' }}">
+                                                    {% if is_enabled %}<i class="bi bi-check-circle-fill"></i> Permitido{% else %}<i class="bi bi-x-circle-fill"></i> Negado{% endif %}
+                                                </button>
+                                            </div>
+                                            <input type="hidden" name="permission_delete_chamados" value="{{ '1' if is_enabled else '0' }}">
+                                        </div>
+                                    </div>
+
+                                    <!-- Permissão: Atribuir Chamados -->
+                                    <div class="col-md-6">
+                                        <div class="permission-item p-3 border rounded">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="bi bi-person-check me-2"></i>
+                                                    <strong>Atribuir Chamados</strong>
+                                                    <br>
+                                                    <small class="text-muted">Designar chamados para técnicos</small>
+                                                </div>
+                                                {% set is_enabled = 'assign_chamados' in user_permissions %}
+                                                <button type="button" class="btn btn-toggle permission-toggle" 
+                                                        data-permission="assign_chamados"
+                                                        data-enabled="{{ 'true' if is_enabled else 'false' }}">
+                                                    {% if is_enabled %}<i class="bi bi-check-circle-fill"></i> Permitido{% else %}<i class="bi bi-x-circle-fill"></i> Negado{% endif %}
+                                                </button>
+                                            </div>
+                                            <input type="hidden" name="permission_assign_chamados" value="{{ '1' if is_enabled else '0' }}">
+                                        </div>
+                                    </div>
+
+                                    <!-- Permissão: Gerenciar Equipamentos -->
+                                    <div class="col-md-6">
+                                        <div class="permission-item p-3 border rounded">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="bi bi-laptop me-2"></i>
+                                                    <strong>Gerenciar Equipamentos</strong>
+                                                    <br>
+                                                    <small class="text-muted">Acessar infraestrutura</small>
+                                                </div>
+                                                {% set is_enabled = 'manage_infrastructure' in user_permissions %}
+                                                <button type="button" class="btn btn-toggle permission-toggle" 
+                                                        data-permission="manage_infrastructure"
+                                                        data-enabled="{{ 'true' if is_enabled else 'false' }}">
+                                                    {% if is_enabled %}<i class="bi bi-check-circle-fill"></i> Permitido{% else %}<i class="bi bi-x-circle-fill"></i> Negado{% endif %}
+                                                </button>
+                                            </div>
+                                            <input type="hidden" name="permission_manage_infrastructure" value="{{ '1' if is_enabled else '0' }}">
+                                        </div>
+                                    </div>
+
+                                    <!-- Permissão: Gerenciar Usuários -->
+                                    <div class="col-md-6">
+                                        <div class="permission-item p-3 border rounded">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="bi bi-people me-2"></i>
+                                                    <strong>Gerenciar Usuários</strong>
+                                                    <br>
+                                                    <small class="text-muted">Criar/editar usuários</small>
+                                                </div>
+                                                {% set is_enabled = 'manage_users' in user_permissions %}
+                                                <button type="button" class="btn btn-toggle permission-toggle" 
+                                                        data-permission="manage_users"
+                                                        data-enabled="{{ 'true' if is_enabled else 'false' }}">
+                                                    {% if is_enabled %}<i class="bi bi-check-circle-fill"></i> Permitido{% else %}<i class="bi bi-x-circle-fill"></i> Negado{% endif %}
+                                                </button>
+                                            </div>
+                                            <input type="hidden" name="permission_manage_users" value="{{ '1' if is_enabled else '0' }}">
+                                        </div>
+                                    </div>
+
+                                    <!-- Permissão: Acessar Chat -->
+                                    <div class="col-md-6">
+                                        <div class="permission-item p-3 border rounded">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="bi bi-chat-dots me-2"></i>
+                                                    <strong>Acessar Chat</strong>
+                                                    <br>
+                                                    <small class="text-muted">Chat de suporte</small>
+                                                </div>
+                                                {% set is_enabled = 'access_chat' in user_permissions %}
+                                                <button type="button" class="btn btn-toggle permission-toggle" 
+                                                        data-permission="access_chat"
+                                                        data-enabled="{{ 'true' if is_enabled else 'false' }}">
+                                                    {% if is_enabled %}<i class="bi bi-check-circle-fill"></i> Permitido{% else %}<i class="bi bi-x-circle-fill"></i> Negado{% endif %}
+                                                </button>
+                                            </div>
+                                            <input type="hidden" name="permission_access_chat" value="{{ '1' if is_enabled else '0' }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary">Salvar</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Salvar Alterações
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -65,4 +255,118 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.permission-item {
+    transition: all 0.3s ease;
+}
+
+.permission-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.btn-toggle {
+    min-width: 120px;
+    font-weight: 600;
+    border: 2px solid;
+    transition: all 0.3s ease;
+}
+
+.btn-toggle[data-enabled="true"] {
+    background-color: #28a745;
+    color: white;
+    border-color: #28a745;
+}
+
+.btn-toggle[data-enabled="true"]:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+    transform: scale(1.05);
+}
+
+.btn-toggle[data-enabled="false"] {
+    background-color: #dc3545;
+    color: white;
+    border-color: #dc3545;
+}
+
+.btn-toggle[data-enabled="false"]:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+    transform: scale(1.05);
+}
+
+.permission-item[data-status="enabled"] {
+    border-color: #28a745 !important;
+    background-color: #f8fff9;
+}
+
+.permission-item[data-status="disabled"] {
+    border-color: #dc3545 !important;
+    background-color: #fff8f8;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleButtons = document.querySelectorAll('.permission-toggle');
+    
+    toggleButtons.forEach(function(button) {
+        // Definir status inicial do card
+        updatePermissionItemStatus(button);
+        
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const permission = this.getAttribute('data-permission');
+            const currentStatus = this.getAttribute('data-enabled') === 'true';
+            const newStatus = !currentStatus;
+            
+            // Atualizar o botão
+            this.setAttribute('data-enabled', newStatus);
+            
+            // Atualizar o input hidden
+            const hiddenInput = this.closest('.permission-item').querySelector('input[name="permission_' + permission + '"]');
+            if (hiddenInput) {
+                hiddenInput.value = newStatus ? '1' : '0';
+            }
+            
+            // Atualizar visual do botão
+            if (newStatus) {
+                this.innerHTML = '<i class="bi bi-check-circle-fill"></i> Permitido';
+                this.classList.remove('btn-danger');
+                this.classList.add('btn-success');
+            } else {
+                this.innerHTML = '<i class="bi bi-x-circle-fill"></i> Negado';
+                this.classList.remove('btn-success');
+                this.classList.add('btn-danger');
+            }
+            
+            // Atualizar status do card
+            updatePermissionItemStatus(this);
+            
+            // Feedback visual
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 150);
+        });
+    });
+    
+    function updatePermissionItemStatus(button) {
+        const permissionItem = button.closest('.permission-item');
+        const isEnabled = button.getAttribute('data-enabled') === 'true';
+        
+        if (isEnabled) {
+            permissionItem.setAttribute('data-status', 'enabled');
+        } else {
+            permissionItem.setAttribute('data-status', 'disabled');
+        }
+    }
+});
+</script>
 {% endblock %}

@@ -54,9 +54,10 @@
                                         <a href="{{ url_for('funcao.editar_funcao', id=funcao.id) }}" class="btn btn-sm btn-warning">
                                             <i class="bi bi-pencil"></i> Editar
                                         </a>
-                                        <button type="button" class="btn btn-sm btn-danger" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#deleteModal{{ funcao.id }}">
+                                        <button type="button" class="btn btn-sm btn-danger btn-delete-funcao" 
+                                                data-funcao-id="{{ funcao.id }}"
+                                                data-funcao-nome="{{ funcao.nome }}"
+                                                data-delete-url="{{ url_for('funcao.excluir_funcao', id=funcao.id) }}">
                                             <i class="bi bi-trash"></i> Excluir
                                         </button>
                                         {% else %}
@@ -64,41 +65,6 @@
                                         {% endif %}
                                     </td>
                                 </tr>
-
-                                <!-- Modal de Exclusão -->
-                                <div class="modal fade" id="deleteModal{{ funcao.id }}" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-                                    <div class="modal-dialog modal-dialog-centered">
-                                        <div class="modal-content" style="border: 2px solid #dc3545;">
-                                            <div class="modal-header bg-danger text-white" style="border-bottom: none;">
-                                                <h5 class="modal-title">
-                                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                                                    Confirmar Exclusão
-                                                </h5>
-                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                            </div>
-                                            <div class="modal-body text-center py-4">
-                                                <div class="mb-3">
-                                                    <i class="bi bi-trash text-danger" style="font-size: 3rem;"></i>
-                                                </div>
-                                                <h6>Tem certeza que deseja excluir a função:</h6>
-                                                <p class="fs-5 fw-bold text-danger mb-3">{{ funcao.nome }}</p>
-                                                <p class="text-muted small mb-0">
-                                                    <i class="bi bi-info-circle"></i> Esta ação não pode ser desfeita.
-                                                </p>
-                                            </div>
-                                            <div class="modal-footer justify-content-center" style="border-top: 1px solid #dee2e6;">
-                                                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
-                                                    <i class="bi bi-x-circle"></i> Cancelar
-                                                </button>
-                                                <form action="{{ url_for('funcao.excluir_funcao', id=funcao.id) }}" method="POST" style="display: inline;">
-                                                    <button type="submit" class="btn btn-danger px-4">
-                                                        <i class="bi bi-trash-fill"></i> Sim, Excluir
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -144,63 +110,91 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de Confirmação de Exclusão (Único - Reutilizável) -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border: 2px solid #dc3545;">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteConfirmModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Confirmar Exclusão
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="mb-3">
+                    <i class="bi bi-trash text-danger" style="font-size: 3rem;"></i>
+                </div>
+                <h6>Tem certeza que deseja excluir a função:</h6>
+                <p class="fs-5 fw-bold text-danger mb-3" id="funcaoNomeToDelete"></p>
+                <p class="text-muted small mb-0">
+                    <i class="bi bi-info-circle"></i> Esta ação não pode ser desfeita.
+                </p>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger px-4">
+                        <i class="bi bi-trash-fill"></i> Sim, Excluir
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_css %}
 <style>
-/* Estabilizar modais - evitar qualquer movimento */
-.modal {
-    --bs-modal-zindex: 1055;
-}
-
 .modal-dialog {
     max-width: 500px;
-    margin: 1.75rem auto;
 }
 
-.modal-content {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    pointer-events: auto;
-    background-color: #fff;
-    background-clip: padding-box;
-    border: 1px solid rgba(0,0,0,.2);
-    border-radius: 0.5rem;
-    outline: 0;
-}
-
-.modal-dialog-centered {
-    display: flex;
-    align-items: center;
-    min-height: calc(100% - 3.5rem);
-}
-
-/* Evitar qualquer animação ou transição indesejada no modal */
-.modal *, .modal *:before, .modal *:after {
-    -webkit-transition: none !important;
-    -moz-transition: none !important;
-    -o-transition: none !important;
-    transition: none !important;
-}
-
-/* Botões do modal fixos */
 .modal-footer .btn {
     min-width: 120px;
     font-weight: 600;
 }
 
 .modal-footer {
-    padding: 1rem;
     background-color: #f8f9fa;
 }
-
-.modal-body {
-    position: relative;
-    flex: 1 1 auto;
-    padding: 1rem;
-}
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteButtons = document.querySelectorAll('.btn-delete-funcao');
+    const deleteModal = document.getElementById('deleteConfirmModal');
+    const deleteForm = document.getElementById('deleteForm');
+    const funcaoNomeElement = document.getElementById('funcaoNomeToDelete');
+    
+    if (deleteModal) {
+        const modalInstance = new bootstrap.Modal(deleteModal, {
+            backdrop: 'static',
+            keyboard: false
+        });
+        
+        deleteButtons.forEach(function(button) {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const funcaoNome = this.getAttribute('data-funcao-nome');
+                const deleteUrl = this.getAttribute('data-delete-url');
+                
+                // Atualizar o conteúdo do modal
+                funcaoNomeElement.textContent = funcaoNome;
+                deleteForm.action = deleteUrl;
+                
+                // Mostrar o modal
+                modalInstance.show();
+            });
+        });
+    }
+});
+</script>
 {% endblock %}
 

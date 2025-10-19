@@ -129,10 +129,28 @@ Abra seu navegador e acesse: `http://127.0.0.1:5000`
 - Acessar chat de suporte
 - Visualizar todas as estatísticas
 
-### 👤 Usuário
-- Criar e visualizar próprios chamados
-- Editar próprios chamados
-- Visualizar dashboard básico
+### 👤 Usuário - Acesso Básico
+
+#### ✅ Permitido
+- ✓ Criar novos chamados
+- ✓ Visualizar próprios chamados
+- ✓ Editar próprios chamados
+- ✓ Visualizar dashboard básico
+- ✓ Comentar em chamados próprios
+
+#### ❌ Negado
+- ✗ Visualizar chamados de outros usuários
+- ✗ Deletar chamados
+- ✗ Atribuir chamados para técnicos
+- ✗ Gerenciar equipamentos
+- ✗ Gerenciar usuários
+- ✗ Acessar funções administrativas
+
+> 💡 **Gerenciar Permissões**: Para alterar permissões de um usuário, acesse:
+> 1. Menu lateral → **Usuários**
+> 2. Clique no botão **Editar** do usuário desejado
+> 3. Altere o **Tipo de Usuário** (Usuário/Técnico/Admin)
+> 4. Salve as alterações
 
 ## 🎨 Design e Interface
 
