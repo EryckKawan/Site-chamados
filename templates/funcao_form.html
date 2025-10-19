@@ -167,19 +167,26 @@
             <div class="row">
         `;
 
-        permissionData.permissions.forEach(permission => {
+        permissionData.permissions.forEach((permission, index) => {
             const statusClass = permission.allowed ? 'success' : 'danger';
             const statusIcon = permission.allowed ? '✅' : '❌';
             const statusText = permission.allowed ? 'Permitido' : 'Negado';
+            const permissionKey = permission.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
             
             html += `
                 <div class="col-md-6 mb-2">
-                    <div class="d-flex align-items-center p-2 border rounded">
+                    <div class="permission-item d-flex align-items-center p-3 border rounded" data-status="${permission.allowed ? 'enabled' : 'disabled'}">
                         <span class="me-2">${permission.icon}</span>
                         <div class="flex-grow-1">
                             <small class="fw-bold">${permission.name}</small>
                         </div>
-                        <span class="badge bg-${statusClass}">${statusIcon} ${statusText}</span>
+                        <button type="button" class="btn btn-toggle permission-toggle" 
+                                data-permission="${permissionKey}"
+                                data-enabled="${permission.allowed}"
+                                data-index="${index}">
+                            <i class="bi bi-${permission.allowed ? 'check-circle-fill' : 'x-circle-fill'}"></i> ${statusText}
+                        </button>
+                        <input type="hidden" name="permission_${permissionKey}" value="${permission.allowed ? '1' : '0'}">
                     </div>
                 </div>
             `;
@@ -187,6 +194,87 @@
 
         html += '</div>';
         checklist.innerHTML = html;
+        
+        // Configurar event listeners para os botões toggle
+        setupPermissionToggles();
+    }
+    
+    // Função para configurar os botões toggle
+    function setupPermissionToggles() {
+        const toggleButtons = document.querySelectorAll('.permission-toggle');
+        
+        toggleButtons.forEach(function(button) {
+            // Garantir que o botão está clicável
+            button.style.cursor = 'pointer';
+            button.style.pointerEvents = 'auto';
+            
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                console.log('🖱️ Botão clicado:', this.getAttribute('data-permission'));
+                
+                const permission = this.getAttribute('data-permission');
+                const currentStatus = this.getAttribute('data-enabled') === 'true';
+                const newStatus = !currentStatus;
+                
+                console.log(`Mudando de ${currentStatus} para ${newStatus}`);
+                
+                // Atualizar o botão
+                this.setAttribute('data-enabled', newStatus.toString());
+                
+                // Atualizar o input hidden
+                const hiddenInput = this.closest('.permission-item').querySelector('input[name="permission_' + permission + '"]');
+                if (hiddenInput) {
+                    hiddenInput.value = newStatus ? '1' : '0';
+                    console.log('Input hidden atualizado:', hiddenInput.value);
+                }
+                
+                // Atualizar visual do botão
+                if (newStatus) {
+                    this.innerHTML = '<i class="bi bi-check-circle-fill"></i> Permitido';
+                    this.classList.remove('btn-danger');
+                    this.classList.add('btn-success');
+                } else {
+                    this.innerHTML = '<i class="bi bi-x-circle-fill"></i> Negado';
+                    this.classList.remove('btn-success');
+                    this.classList.add('btn-danger');
+                }
+                
+                // Atualizar status do card
+                updatePermissionItemStatus(this);
+                
+                // Feedback visual
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1)';
+                }, 150);
+                
+                console.log('✅ Atualização concluída');
+            });
+            
+            // Adicionar feedback visual no hover
+            button.addEventListener('mouseenter', function() {
+                this.style.opacity = '0.9';
+            });
+            
+            button.addEventListener('mouseleave', function() {
+                this.style.opacity = '1';
+            });
+        });
+    }
+    
+    function updatePermissionItemStatus(button) {
+        const permissionItem = button.closest('.permission-item');
+        const isEnabled = button.getAttribute('data-enabled') === 'true';
+        
+        if (permissionItem) {
+            if (isEnabled) {
+                permissionItem.setAttribute('data-status', 'enabled');
+            } else {
+                permissionItem.setAttribute('data-status', 'disabled');
+            }
+        }
     }
 
     // Validação do formulário e eventos
@@ -278,6 +366,52 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
     font-weight: 700;
+}
+
+/* Estilos para botões toggle */
+.btn-toggle {
+    min-width: 120px;
+    font-weight: 600;
+    border: 2px solid;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    pointer-events: auto;
+    z-index: 10;
+    position: relative;
+}
+
+.btn-toggle[data-enabled="true"] {
+    background-color: #28a745;
+    color: white;
+    border-color: #28a745;
+}
+
+.btn-toggle[data-enabled="true"]:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+    transform: scale(1.05);
+}
+
+.btn-toggle[data-enabled="false"] {
+    background-color: #dc3545;
+    color: white;
+    border-color: #dc3545;
+}
+
+.btn-toggle[data-enabled="false"]:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+    transform: scale(1.05);
+}
+
+.permission-item[data-status="enabled"] {
+    border-color: #28a745 !important;
+    background-color: #f8fff9;
+}
+
+.permission-item[data-status="disabled"] {
+    border-color: #dc3545 !important;
+    background-color: #fff8f8;
 }
 </style>
 {% endblock %}
