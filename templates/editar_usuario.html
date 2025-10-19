@@ -28,7 +28,10 @@
                             <label for="role" class="form-label">Função</label>
                             <select class="form-select" id="role" name="role">
                                 <option value="user" {% if usuario.role == 'user' %}selected{% endif %}>Usuário</option>
+                                <option value="administrativo" {% if usuario.role == 'administrativo' %}selected{% endif %}>Administrativo</option>
                                 <option value="tech" {% if usuario.role == 'tech' %}selected{% endif %}>Técnico</option>
+                                <option value="supervisor" {% if usuario.role == 'supervisor' %}selected{% endif %}>Supervisor</option>
+                                <option value="diretor" {% if usuario.role == 'diretor' %}selected{% endif %}>Diretor</option>
                                 <option value="admin" {% if usuario.role == 'admin' %}selected{% endif %}>Administrador</option>
                             </select>
                         </div>
@@ -36,6 +39,7 @@
                         <div class="mb-3">
                             <label for="funcao_id" class="form-label">Função/Cargo</label>
                             <select class="form-select" id="funcao_id" name="funcao_id">
+                                <option value="">Selecione uma função/cargo</option>
                                 {% for funcao in funcoes %}
                                 <option value="{{ funcao.id }}" {% if usuario.funcao_id == funcao.id %}selected{% endif %}>
                                     {{ funcao.nome }} (Nível {{ funcao.nivel_acesso }})

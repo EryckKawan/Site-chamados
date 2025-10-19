@@ -1042,6 +1042,14 @@ def editar_usuario(id):
         username = request.form['username']
         email = request.form['email']
         role = request.form['role']
+        funcao_id = request.form.get('funcao_id')
+        if funcao_id == '':
+            funcao_id = None
+        elif funcao_id:
+            try:
+                funcao_id = int(funcao_id)
+            except ValueError:
+                funcao_id = None
         password = request.form.get('password', '').strip()
 
         # Validações básicas
@@ -1058,7 +1066,7 @@ def editar_usuario(id):
             return redirect(url_for('editar_usuario', id=id))
 
         # Atualiza campos
-        conn.execute('UPDATE users SET username = ?, email = ?, role = ? WHERE id = ?', (username, email, role, id))
+        conn.execute('UPDATE users SET username = ?, email = ?, role = ?, funcao_id = ? WHERE id = ?', (username, email, role, funcao_id, id))
 
         # Atualiza senha se enviada
         if password:
@@ -1071,8 +1079,10 @@ def editar_usuario(id):
         flash('Usuário atualizado com sucesso!', 'success')
         return redirect(url_for('gerenciar_usuarios'))
 
+    # Buscar todas as funções disponíveis
+    funcoes = conn.execute('SELECT * FROM funcoes ORDER BY nivel_acesso DESC').fetchall()
     conn.close()
-    return render_template('editar_usuario.html', usuario=usuario)
+    return render_template('editar_usuario.html', usuario=usuario, funcoes=funcoes)
 
 # ==========================================
 # CHAT DE SUPORTE - Estilo WhatsApp
