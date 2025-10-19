@@ -251,13 +251,13 @@
                         </li>
                         {% endif %}
                         
-                        <!-- Funções - Apenas Admin -->
+                        <!-- Funções/Cargos - Apenas Admin -->
                         {% if can_access_funcoes() %}
                         <li class="nav-item">
                             <a class="nav-link {% if request.endpoint.startswith('funcao') %}active{% endif %}" 
                                href="{{ url_for('funcao.listar_funcoes') }}">
                                 <i class="bi bi-person-badge"></i>
-                                Funções
+                                Funções/Cargos
                             </a>
                         </li>
                         {% endif %}

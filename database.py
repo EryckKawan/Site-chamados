@@ -10,6 +10,65 @@ from urllib.parse import urlparse
 DATABASE_URL = os.environ.get('DATABASE_URL')
 USE_POSTGRES = DATABASE_URL is not None
 
+class CursorWrapper:
+    """Wrapper para cursor que converte resultados PostgreSQL para formato SQLite Row"""
+    def __init__(self, cursor, is_postgres=False):
+        self._cursor = cursor
+        self._is_postgres = is_postgres
+    
+    def fetchone(self):
+        result = self._cursor.fetchone()
+        if result is None:
+            return None
+        if self._is_postgres:
+            # PostgreSQL RealDictCursor já retorna dict-like
+            # Criar uma classe que se comporta como sqlite3.Row
+            class PostgresRow:
+                def __init__(self, data):
+                    self._data = data
+                
+                def __getitem__(self, key):
+                    return self._data[key]
+                
+                def keys(self):
+                    return self._data.keys()
+                
+                def __contains__(self, key):
+                    return key in self._data
+            
+            return PostgresRow(result)
+        return result
+    
+    def fetchall(self):
+        results = self._cursor.fetchall()
+        if self._is_postgres:
+            class PostgresRow:
+                def __init__(self, data):
+                    self._data = data
+                
+                def __getitem__(self, key):
+                    return self._data[key]
+                
+                def keys(self):
+                    return self._data.keys()
+                
+                def __contains__(self, key):
+                    return key in self._data
+            
+            return [PostgresRow(row) for row in results]
+        return results
+    
+    def execute(self, *args, **kwargs):
+        return self._cursor.execute(*args, **kwargs)
+    
+    @property
+    def rowcount(self):
+        return self._cursor.rowcount
+    
+    @property
+    def lastrowid(self):
+        return self._cursor.lastrowid if hasattr(self._cursor, 'lastrowid') else None
+
 class DatabaseConnection:
     """Wrapper para conexões de banco que converte queries automaticamente"""
     def __init__(self, conn):
@@ -18,7 +77,8 @@ class DatabaseConnection:
     
     def cursor(self):
         """Retorna cursor do banco"""
-        return self._conn.cursor()
+        cursor = self._conn.cursor()
+        return CursorWrapper(cursor, USE_POSTGRES)
     
     def execute(self, query, params=None):
         """Executa query convertendo placeholders se necessário"""
@@ -30,7 +90,7 @@ class DatabaseConnection:
             cursor.execute(query, params)
         else:
             cursor.execute(query)
-        return cursor
+        return CursorWrapper(cursor, USE_POSTGRES)
     
     def commit(self):
         return self._conn.commit()

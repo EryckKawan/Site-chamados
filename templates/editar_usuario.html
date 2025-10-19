@@ -25,7 +25,7 @@
                             <input type="email" name="email" class="form-control" value="{{ usuario.email }}" required>
                         </div>
                         <div class="mb-3">
-                            <label for="role" class="form-label">Função</label>
+                            <label for="role" class="form-label">Função/Cargo</label>
                             <select class="form-select" id="role" name="role">
                                 <option value="user" {% if usuario.role == 'user' %}selected{% endif %}>Usuário</option>
                                 <option value="administrativo" {% if usuario.role == 'administrativo' %}selected{% endif %}>Administrativo</option>

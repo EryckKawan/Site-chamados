@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block title %}
-    {% if funcao %}Editar Função{% else %}Nova Função{% endif %}
+    {% if funcao %}Editar Função/Cargo{% else %}Nova Função/Cargo{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -10,7 +10,7 @@
         <div class="col-md-8 offset-md-2">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
-                    <h2 class="mb-0">{% if funcao %}Editar Função{% else %}Nova Função{% endif %}</h2>
+                    <h2 class="mb-0">{% if funcao %}Editar Função/Cargo{% else %}Nova Função/Cargo{% endif %}</h2>
                 </div>
                 <div class="card-body">
                     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -26,7 +26,7 @@
 
                     <form method="post" class="needs-validation" novalidate>
                         <div class="mb-3">
-                            <label for="nome" class="form-label">Nome da Função <span class="text-danger">*</span></label>
+                            <label for="nome" class="form-label">Nome da Função/Cargo <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="nome" name="nome" 
                                    value="{{ funcao.nome if funcao else '' }}" required>
                             <div class="invalid-feedback">
