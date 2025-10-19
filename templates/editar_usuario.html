@@ -56,6 +56,7 @@
                         </div>
 
                         <!-- Seção de Permissões Granulares -->
+                        {% set user_permissions = user_permissions|default([]) %}
                         <div class="card mb-4">
                             <div class="card-header bg-primary text-white">
                                 <h5 class="mb-0">
@@ -67,7 +68,7 @@
                                     <i class="bi bi-info-circle"></i> Configure individualmente quais funcionalidades este usuário pode acessar
                                 </p>
                                 
-                                <div class="row g-3">
+                                <div class="row g-3" id="permissions-container">
                                     <!-- Permissão: Visualizar Chamados -->
                                     <div class="col-md-6">
                                         <div class="permission-item p-3 border rounded">
@@ -272,6 +273,10 @@
     font-weight: 600;
     border: 2px solid;
     transition: all 0.3s ease;
+    cursor: pointer;
+    pointer-events: auto;
+    z-index: 10;
+    position: relative;
 }
 
 .btn-toggle[data-enabled="true"] {
@@ -312,27 +317,49 @@
 
 {% block extra_js %}
 <script>
+console.log('🔧 Carregando sistema de permissões...');
+
 document.addEventListener('DOMContentLoaded', function() {
-    const toggleButtons = document.querySelectorAll('.permission-toggle');
+    console.log('✅ DOM carregado');
     
-    toggleButtons.forEach(function(button) {
+    const toggleButtons = document.querySelectorAll('.permission-toggle');
+    console.log('🔘 Botões encontrados:', toggleButtons.length);
+    
+    if (toggleButtons.length === 0) {
+        console.error('❌ Nenhum botão .permission-toggle encontrado!');
+        return;
+    }
+    
+    toggleButtons.forEach(function(button, index) {
+        console.log(`Configurando botão ${index + 1}:`, button.getAttribute('data-permission'));
+        
         // Definir status inicial do card
         updatePermissionItemStatus(button);
         
+        // Garantir que o botão está clicável
+        button.style.cursor = 'pointer';
+        button.style.pointerEvents = 'auto';
+        
         button.addEventListener('click', function(e) {
             e.preventDefault();
+            e.stopPropagation();
+            
+            console.log('🖱️ Botão clicado:', this.getAttribute('data-permission'));
             
             const permission = this.getAttribute('data-permission');
             const currentStatus = this.getAttribute('data-enabled') === 'true';
             const newStatus = !currentStatus;
             
+            console.log(`Mudando de ${currentStatus} para ${newStatus}`);
+            
             // Atualizar o botão
-            this.setAttribute('data-enabled', newStatus);
+            this.setAttribute('data-enabled', newStatus.toString());
             
             // Atualizar o input hidden
             const hiddenInput = this.closest('.permission-item').querySelector('input[name="permission_' + permission + '"]');
             if (hiddenInput) {
                 hiddenInput.value = newStatus ? '1' : '0';
+                console.log('Input hidden atualizado:', hiddenInput.value);
             }
             
             // Atualizar visual do botão
@@ -352,8 +379,19 @@ document.addEventListener('DOMContentLoaded', function() {
             // Feedback visual
             this.style.transform = 'scale(0.95)';
             setTimeout(() => {
-                this.style.transform = '';
+                this.style.transform = 'scale(1)';
             }, 150);
+            
+            console.log('✅ Atualização concluída');
+        }, false);
+        
+        // Adicionar feedback visual no hover
+        button.addEventListener('mouseenter', function() {
+            this.style.opacity = '0.9';
+        });
+        
+        button.addEventListener('mouseleave', function() {
+            this.style.opacity = '1';
         });
     });
     
@@ -361,12 +399,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const permissionItem = button.closest('.permission-item');
         const isEnabled = button.getAttribute('data-enabled') === 'true';
         
-        if (isEnabled) {
-            permissionItem.setAttribute('data-status', 'enabled');
-        } else {
-            permissionItem.setAttribute('data-status', 'disabled');
+        if (permissionItem) {
+            if (isEnabled) {
+                permissionItem.setAttribute('data-status', 'enabled');
+            } else {
+                permissionItem.setAttribute('data-status', 'disabled');
+            }
         }
     }
+    
+    console.log('✅ Sistema de permissões configurado com sucesso!');
 });
 </script>
 {% endblock %}

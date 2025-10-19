@@ -1152,13 +1152,16 @@ def editar_usuario(id):
     funcoes = conn.execute('SELECT * FROM funcoes ORDER BY nivel_acesso DESC').fetchall()
     
     # Buscar permissões do usuário
-    user_permissions = conn.execute(
-        'SELECT permission_key FROM user_permissions WHERE user_id = ? AND enabled = 1',
-        (id,)
-    ).fetchall()
-    
-    # Converter para lista de strings
-    permissions_list = [perm['permission_key'] for perm in user_permissions]
+    try:
+        user_permissions = conn.execute(
+            'SELECT permission_key FROM user_permissions WHERE user_id = ? AND enabled = 1',
+            (id,)
+        ).fetchall()
+        # Converter para lista de strings
+        permissions_list = [perm['permission_key'] for perm in user_permissions] if user_permissions else []
+    except Exception as e:
+        print(f"Erro ao buscar permissões: {e}")
+        permissions_list = []
     
     conn.close()
     return render_template('editar_usuario.html', usuario=usuario, funcoes=funcoes, user_permissions=permissions_list)
