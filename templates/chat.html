@@ -271,9 +271,16 @@ $(document).ready(function() {
 
 function carregarMensagens() {
     fetch('/api/chat/mensagens')
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 401) {
+                console.log('Não autenticado - redirecionando para login');
+                window.location.href = '/login';
+                return;
+            }
+            return response.json();
+        })
         .then(data => {
-            if (data.mensagens && data.mensagens.length > 0) {
+            if (data && data.mensagens && data.mensagens.length > 0) {
                 $('#noMessages').hide();
                 
                 // Verificar se há novas mensagens
@@ -292,7 +299,9 @@ function carregarMensagens() {
             }
             
             // Atualizar contador de usuários online (simulado)
-            $('#online-users').text(`${data.mensagens.length > 0 ? 'Chat ativo' : 'Aguardando mensagens'}`);
+            if (data && data.mensagens) {
+                $('#online-users').text(`${data.mensagens.length > 0 ? 'Chat ativo' : 'Aguardando mensagens'}`);
+            }
         })
         .catch(error => console.error('Erro ao carregar mensagens:', error));
 }
@@ -336,13 +345,22 @@ function enviarMensagem() {
         },
         body: JSON.stringify({ mensagem: mensagem })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (response.status === 401) {
+            alert('Sessão expirada. Faça login novamente.');
+            window.location.href = '/login';
+            return;
+        }
+        return response.json();
+    })
     .then(data => {
-        if (data.success) {
+        if (data && data.success) {
             adicionarMensagemNaTela(data.mensagem);
             ultimoIdMensagem = data.mensagem.id;
             scrollToBottom();
             $('#noMessages').hide();
+        } else if (data && data.error) {
+            alert('Erro: ' + data.error);
         }
     })
     .catch(error => {

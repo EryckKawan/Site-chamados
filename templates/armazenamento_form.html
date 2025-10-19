@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Novo Armazenamento{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-hdd"></i> 
+                        {% if action == 'novo-armazenamento' %}Novo Armazenamento{% else %}Editar Armazenamento{% endif %}
+                    </h4>
+                    {% if servidor %}
+                    <small>Servidor: <strong>{{ servidor.nome }}</strong></small>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="nome" class="form-label">Nome do Armazenamento *</label>
+                                    <input type="text" class="form-control" id="nome" name="nome" 
+                                           value="{{ armazenamento.nome if armazenamento else '' }}" required>
+                                    <div class="form-text">Ex: C:, D:, /var, /home, SSD Principal</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="tipo" class="form-label">Tipo de Armazenamento *</label>
+                                    <select class="form-select" id="tipo" name="tipo" required>
+                                        <option value="">Selecione...</option>
+                                        <option value="SSD" {% if armazenamento and armazenamento.tipo == 'SSD' %}selected{% endif %}>SSD (Solid State Drive)</option>
+                                        <option value="HDD" {% if armazenamento and armazenamento.tipo == 'HDD' %}selected{% endif %}>HDD (Hard Disk Drive)</option>
+                                        <option value="NVMe" {% if armazenamento and armazenamento.tipo == 'NVMe' %}selected{% endif %}>NVMe (Non-Volatile Memory Express)</option>
+                                        <option value="SAS" {% if armazenamento and armazenamento.tipo == 'SAS' %}selected{% endif %}>SAS (Serial Attached SCSI)</option>
+                                        <option value="SATA" {% if armazenamento and armazenamento.tipo == 'SATA' %}selected{% endif %}>SATA (Serial ATA)</option>
+                                        <option value="USB" {% if armazenamento and armazenamento.tipo == 'USB' %}selected{% endif %}>USB</option>
+                                        <option value="Network" {% if armazenamento and armazenamento.tipo == 'Network' %}selected{% endif %}>Network Storage</option>
+                                        <option value="Outro" {% if armazenamento and armazenamento.tipo == 'Outro' %}selected{% endif %}>Outro</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="capacidade_valor" class="form-label">Capacidade Total *</label>
+                                    <input type="number" class="form-control" id="capacidade_valor" name="capacidade_valor" 
+                                           value="{{ armazenamento.capacidade_valor if armazenamento else '' }}" 
+                                           step="0.01" min="0" required>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <label for="capacidade_unidade" class="form-label">Unidade</label>
+                                    <select class="form-select" id="capacidade_unidade" name="capacidade_unidade" required>
+                                        <option value="MB" {% if armazenamento and armazenamento.capacidade_unidade == 'MB' %}selected{% endif %}>MB</option>
+                                        <option value="GB" {% if armazenamento and armazenamento.capacidade_unidade == 'GB' %}selected{% endif %}>GB</option>
+                                        <option value="TB" {% if armazenamento and armazenamento.capacidade_unidade == 'TB' %}selected{% endif %}>TB</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="usado_valor" class="form-label">Espaço Usado *</label>
+                                    <input type="number" class="form-control" id="usado_valor" name="usado_valor" 
+                                           value="{{ armazenamento.usado_valor if armazenamento else '' }}" 
+                                           step="0.01" min="0" required>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <label for="usado_unidade" class="form-label">Unidade</label>
+                                    <select class="form-select" id="usado_unidade" name="usado_unidade" required>
+                                        <option value="MB" {% if armazenamento and armazenamento.usado_unidade == 'MB' %}selected{% endif %}>MB</option>
+                                        <option value="GB" {% if armazenamento and armazenamento.usado_unidade == 'GB' %}selected{% endif %}>GB</option>
+                                        <option value="TB" {% if armazenamento and armazenamento.usado_unidade == 'TB' %}selected{% endif %}>TB</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Preview dos cálculos -->
+                        <div class="alert alert-info">
+                            <h6><i class="bi bi-calculator"></i> Pré-visualização dos Cálculos:</h6>
+                            <div class="row text-center">
+                                <div class="col-3">
+                                    <strong id="preview-capacidade">-</strong><br>
+                                    <small class="text-muted">Capacidade (GB)</small>
+                                </div>
+                                <div class="col-3">
+                                    <strong id="preview-usado">-</strong><br>
+                                    <small class="text-muted">Usado (GB)</small>
+                                </div>
+                                <div class="col-3">
+                                    <strong id="preview-livre">-</strong><br>
+                                    <small class="text-muted">Livre (GB)</small>
+                                </div>
+                                <div class="col-3">
+                                    <strong id="preview-percentual">-</strong><br>
+                                    <small class="text-muted">% Uso</small>
+                                </div>
+                            </div>
+                            <div class="progress mt-2" style="height: 6px;">
+                                <div id="preview-progress" class="progress-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="observacoes" class="form-label">Observações</label>
+                            <textarea class="form-control" id="observacoes" name="observacoes" rows="3">{{ armazenamento.observacoes if armazenamento else '' }}</textarea>
+                            <div class="form-text">Informações adicionais sobre este armazenamento</div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('servidor.listar_servidores') }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Voltar
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> 
+                                {% if action == 'novo-armazenamento' %}Adicionar Armazenamento{% else %}Salvar Alterações{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Cálculo em tempo real dos valores
+function updatePreview() {
+    const capacidadeValor = parseFloat(document.getElementById('capacidade_valor').value) || 0;
+    const capacidadeUnidade = document.getElementById('capacidade_unidade').value;
+    const usadoValor = parseFloat(document.getElementById('usado_valor').value) || 0;
+    const usadoUnidade = document.getElementById('usado_unidade').value;
+
+    // Converter para GB
+    let capacidadeGB = capacidadeValor;
+    if (capacidadeUnidade === 'TB') {
+        capacidadeGB = capacidadeValor * 1024;
+    } else if (capacidadeUnidade === 'MB') {
+        capacidadeGB = capacidadeValor / 1024;
+    }
+    
+    let usadoGB = usadoValor;
+    if (usadoUnidade === 'TB') {
+        usadoGB = usadoValor * 1024;
+    } else if (usadoUnidade === 'MB') {
+        usadoGB = usadoValor / 1024;
+    }
+    const livreGB = capacidadeGB - usadoGB;
+    const percentualUso = capacidadeGB > 0 ? (usadoGB / capacidadeGB) * 100 : 0;
+
+    // Atualizar preview
+    document.getElementById('preview-capacidade').textContent = capacidadeGB.toFixed(2);
+    document.getElementById('preview-usado').textContent = usadoGB.toFixed(2);
+    document.getElementById('preview-livre').textContent = livreGB.toFixed(2);
+    document.getElementById('preview-percentual').textContent = percentualUso.toFixed(1) + '%';
+
+    // Atualizar barra de progresso
+    const progressBar = document.getElementById('preview-progress');
+    progressBar.style.width = percentualUso + '%';
+    
+    // Cor da barra baseada no percentual
+    if (percentualUso < 70) {
+        progressBar.className = 'progress-bar bg-success';
+    } else if (percentualUso < 85) {
+        progressBar.className = 'progress-bar bg-warning';
+    } else {
+        progressBar.className = 'progress-bar bg-danger';
+    }
+
+    // Validar se usado não é maior que capacidade
+    if (usadoGB > capacidadeGB) {
+        progressBar.className = 'progress-bar bg-danger';
+        document.getElementById('preview-percentual').innerHTML = '<span class="text-danger">ERRO: Usado > Capacidade</span>';
+    }
+}
+
+// Event listeners
+document.getElementById('capacidade_valor').addEventListener('input', updatePreview);
+document.getElementById('capacidade_unidade').addEventListener('change', updatePreview);
+document.getElementById('usado_valor').addEventListener('input', updatePreview);
+document.getElementById('usado_unidade').addEventListener('change', updatePreview);
+
+// Atualizar preview inicial
+updatePreview();
+</script>
+{% endblock %}

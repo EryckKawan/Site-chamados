@@ -239,36 +239,6 @@
         </div>
     </div>
     {% endif %}
-    
-    <!-- Equipment Problems -->
-    {% if equipamentos_problemas %}
-    <div class="col-lg-6 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="m-0 font-weight-bold">
-                    <i class="bi bi-exclamation-triangle"></i> Equipamentos com Mais Problemas
-                </h6>
-            </div>
-            <div class="card-body">
-                <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
-                    {% if equipamentos_problemas %}
-                        {% for equipamento in equipamentos_problemas[:5] %}
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="mb-1">{{ equipamento.nome }}</h6>
-                                <small class="text-muted">{{ equipamento.total_chamados }} chamado(s)</small>
-                            </div>
-                            <span class="badge bg-danger rounded-pill">{{ equipamento.total_chamados }}</span>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <p class="text-muted">Nenhum equipamento com problemas encontrado.</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
 </div>
 
 <!-- Quick Actions -->
@@ -292,15 +262,15 @@
                             <i class="bi bi-list-ul"></i> Ver Chamados
                         </a>
                     </div>
-                    {% if session.role in ['admin', 'tech'] %}
+                    {% if session.role in ['admin', 'tech', 'diretor', 'supervisor'] %}
                     <div class="col-md-3 mb-2">
-                        <a href="{{ url_for('novo_equipamento') }}" class="btn btn-outline-success w-100">
-                            <i class="bi bi-hdd"></i> Cadastrar Equipamento
+                        <a href="{{ url_for('servidor.novo_servidor') }}" class="btn btn-outline-success w-100">
+                            <i class="bi bi-hdd-rack"></i> Adicionar Servidor
                         </a>
                     </div>
                     <div class="col-md-3 mb-2">
-                        <a href="{{ url_for('infraestrutura') }}" class="btn btn-outline-info w-100">
-                            <i class="bi bi-gear"></i> Infraestrutura
+                        <a href="{{ url_for('servidor.listar_servidores') }}" class="btn btn-outline-info w-100">
+                            <i class="bi bi-hdd-rack"></i> Servidores
                         </a>
                     </div>
                     {% endif %}

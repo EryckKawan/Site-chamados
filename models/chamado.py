@@ -18,10 +18,6 @@ class Chamado(db.Model):
     data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     data_resolucao = db.Column(db.DateTime, nullable=True)
     solucao = db.Column(db.Text, nullable=True)
-    equipamento_id = db.Column(db.Integer, db.ForeignKey('infraestrutura.id'), nullable=True)
-    
-    # Relacionamentos
-    equipamento = db.relationship('Infraestrutura', backref='chamados')
     
     def __repr__(self):
         return f'<Chamado {self.id}: {self.titulo}>'

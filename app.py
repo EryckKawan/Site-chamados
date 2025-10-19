@@ -5,7 +5,7 @@ import sqlite3
 import os
 import math
 from routes.funcao_routes import funcao_bp
-from routes.servidor_storage_routes import servidor_storage_bp
+from routes.servidor_routes import servidor_bp
 
 app = Flask(__name__)
 
@@ -18,7 +18,7 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 # Registrando blueprints
 app.register_blueprint(funcao_bp)
-app.register_blueprint(servidor_storage_bp)
+app.register_blueprint(servidor_bp)
 
 class Pagination:
     """Simple pagination class to mimic Flask-SQLAlchemy pagination"""
@@ -38,40 +38,6 @@ class MockUser:
     def __init__(self, username):
         self.username = username
 
-class MockEquipamento:
-    """Mock equipamento object to match template expectations"""
-    def __init__(self, id, nome, tipo, status, localizacao, marca, modelo):
-        self.id = id
-        self.nome = nome
-        self.tipo = tipo
-        self.status = status
-        self.localizacao = localizacao
-        self.marca = marca
-        self.modelo = modelo
-        
-    @property
-    def tipo_icon(self):
-        icons = {
-            'computador': '💻',
-            'impressora': '🖨️',
-            'servidor': '🖥️',
-            'roteador': '📡',
-            'switch': '🔌',
-            'telefone': '📞',
-            'monitor': '🖥️',
-            'outros': '⚙️'
-        }
-        return icons.get(self.tipo.lower(), '⚙️')
-    
-    @property
-    def status_class(self):
-        classes = {
-            'ativo': 'success',
-            'inativo': 'danger',
-            'manutencao': 'warning'
-        }
-        return classes.get(self.status, 'secondary')
-
 def convert_chamado_row(row):
     """Convert SQLite Row to object with expected attributes"""
     class MockChamado:
@@ -83,20 +49,6 @@ def convert_chamado_row(row):
             # Add expected object attributes
             self.criador = MockUser(row['criador_nome'] if 'criador_nome' in row.keys() else '')
             self.tecnico = MockUser(row['tecnico_nome']) if 'tecnico_nome' in row.keys() and row['tecnico_nome'] else None
-            
-            # Add equipamento if exists
-            if 'equipamento_id' in row.keys() and row['equipamento_id'] and 'equipamento_nome' in row.keys() and row['equipamento_nome']:
-                self.equipamento = MockEquipamento(
-                    id=row['equipamento_id'],
-                    nome=row['equipamento_nome'],
-                    tipo=row['equipamento_tipo'] if 'equipamento_tipo' in row.keys() else 'outros',
-                    status=row['equipamento_status'] if 'equipamento_status' in row.keys() else 'ativo',
-                    localizacao=row['equipamento_localizacao'] if 'equipamento_localizacao' in row.keys() else '',
-                    marca=row['equipamento_marca'] if 'equipamento_marca' in row.keys() else '',
-                    modelo=row['equipamento_modelo'] if 'equipamento_modelo' in row.keys() else ''
-                )
-            else:
-                self.equipamento = None
         
         @property
         def prioridade_class(self):
@@ -257,29 +209,8 @@ def init_db():
             data_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             data_resolucao TIMESTAMP,
             solucao TEXT,
-            equipamento_id INTEGER,
             FOREIGN KEY (criado_por) REFERENCES users (id),
             FOREIGN KEY (atribuido_para) REFERENCES users (id)
-        )
-    ''')
-    
-    # Tabela de infraestrutura
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS infraestrutura (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL,
-            tipo TEXT NOT NULL,
-            marca TEXT,
-            modelo TEXT,
-            numero_serie TEXT,
-            localizacao TEXT NOT NULL,
-            responsavel TEXT,
-            status TEXT NOT NULL DEFAULT 'ativo',
-            data_aquisicao DATE,
-            data_ultima_manutencao DATE,
-            observacoes TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
     
@@ -362,11 +293,6 @@ def can_access_chamados():
     role = get_user_role()
     return role in ['admin', 'diretor', 'supervisor', 'tech', 'administrativo', 'user']
 
-def can_access_infraestrutura():
-    """Verifica se pode acessar infraestrutura"""
-    role = get_user_role()
-    return role in ['admin', 'diretor', 'supervisor', 'tech']
-
 def can_access_storage():
     """Verifica se pode acessar armazenamento de servidores"""
     role = get_user_role()
@@ -413,7 +339,6 @@ def inject_permissions():
     return dict(
         role_label=role_label,
         can_access_chamados=can_access_chamados,
-        can_access_infraestrutura=can_access_infraestrutura,
         can_access_storage=can_access_storage,
         can_access_funcoes=can_access_funcoes,
         can_access_configuracoes=can_access_configuracoes,
@@ -557,19 +482,6 @@ def dashboard():
     meus_chamados = []
     chamados_atribuidos = []
     
-    # Equipamentos com mais problemas
-    equipamentos_problemas = conn.execute('''
-        SELECT i.nome, COUNT(c.id) as total_chamados
-        FROM infraestrutura i
-        LEFT JOIN chamados c ON i.id = c.equipamento_id
-        WHERE i.status = 'ativo'
-        GROUP BY i.id, i.nome
-        HAVING COUNT(c.id) > 0
-        ORDER BY total_chamados DESC
-        LIMIT 5
-    ''').fetchall()
-    equipamentos_problemas = [{'nome': row[0], 'total_chamados': row[1]} for row in equipamentos_problemas]
-    
     conn.close()
     
     return render_template('dashboard.html',
@@ -581,8 +493,7 @@ def dashboard():
                          chamados_por_categoria=chamados_por_categoria,
                          chamados_recentes=chamados_recentes,
                          meus_chamados=meus_chamados,
-                         chamados_atribuidos=chamados_atribuidos,
-                         equipamentos_problemas=equipamentos_problemas)
+                         chamados_atribuidos=chamados_atribuidos)
 
 @app.route('/chamados')
 @login_required
@@ -600,14 +511,10 @@ def chamados():
     
     # Query base
     base_query = '''
-        SELECT c.*, u.username as criador_nome, u2.username as tecnico_nome,
-               i.nome as equipamento_nome, i.tipo as equipamento_tipo, 
-               i.status as equipamento_status, i.localizacao as equipamento_localizacao,
-               i.marca as equipamento_marca, i.modelo as equipamento_modelo
+        SELECT c.*, u.username as criador_nome, u2.username as tecnico_nome
         FROM chamados c
         JOIN users u ON c.criado_por = u.id
         LEFT JOIN users u2 ON c.atribuido_para = u2.id
-        LEFT JOIN infraestrutura i ON c.equipamento_id = i.id
     '''
     
     # Query para contar total
@@ -673,41 +580,29 @@ def novo_chamado():
         descricao = request.form['descricao']
         prioridade = request.form['prioridade']
         categoria = request.form['categoria']
-        equipamento_id = request.form.get('equipamento_id') or None
         
         conn = get_db_connection()
         conn.execute('''
-            INSERT INTO chamados (titulo, descricao, prioridade, categoria, criado_por, equipamento_id)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (titulo, descricao, prioridade, categoria, session['user_id'], equipamento_id))
+            INSERT INTO chamados (titulo, descricao, prioridade, categoria, criado_por)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (titulo, descricao, prioridade, categoria, session['user_id']))
         conn.commit()
         conn.close()
         
         flash('Chamado criado com sucesso!', 'success')
         return redirect(url_for('chamados'))
     
-    # Lista de equipamentos para seleção
-    conn = get_db_connection()
-    equipamentos = conn.execute("SELECT * FROM infraestrutura WHERE status = 'ativo'").fetchall()
-    conn.close()
-    
-    return render_template('chamado_form.html', 
-                         equipamentos=equipamentos,
-                         action='novo')
+    return render_template('chamado_form.html', action='novo')
 
 @app.route('/chamados/<int:id>')
 @login_required
 def visualizar_chamado(id):
     conn = get_db_connection()
     chamado = conn.execute('''
-        SELECT c.*, u.username as criador_nome, u2.username as tecnico_nome, 
-               i.nome as equipamento_nome, i.tipo as equipamento_tipo, 
-               i.status as equipamento_status, i.localizacao as equipamento_localizacao,
-               i.marca as equipamento_marca, i.modelo as equipamento_modelo
+        SELECT c.*, u.username as criador_nome, u2.username as tecnico_nome
         FROM chamados c
         JOIN users u ON c.criado_por = u.id
         LEFT JOIN users u2 ON c.atribuido_para = u2.id
-        LEFT JOIN infraestrutura i ON c.equipamento_id = i.id
         WHERE c.id = ?
     ''', (id,)).fetchone()
     
@@ -746,13 +641,12 @@ def editar_chamado(id):
         descricao = request.form['descricao']
         prioridade = request.form['prioridade']
         categoria = request.form['categoria']
-        equipamento_id = request.form.get('equipamento_id') or None
         
         conn.execute('''
             UPDATE chamados 
-            SET titulo = ?, descricao = ?, prioridade = ?, categoria = ?, equipamento_id = ?, data_atualizacao = CURRENT_TIMESTAMP
+            SET titulo = ?, descricao = ?, prioridade = ?, categoria = ?, data_atualizacao = CURRENT_TIMESTAMP
             WHERE id = ?
-        ''', (titulo, descricao, prioridade, categoria, equipamento_id, id))
+        ''', (titulo, descricao, prioridade, categoria, id))
         
         if is_tech():
             status = request.form['status']
@@ -778,14 +672,12 @@ def editar_chamado(id):
         flash('Chamado atualizado com sucesso!', 'success')
         return redirect(url_for('visualizar_chamado', id=id))
     
-    # Lista de equipamentos e técnicos
-    equipamentos = conn.execute("SELECT * FROM infraestrutura WHERE status = 'ativo'").fetchall()
-    tecnicos = conn.execute("SELECT * FROM users WHERE role IN ('admin', 'tech')").fetchall()
+    # Lista de técnicos
+    tecnicos = conn.execute("SELECT * FROM users WHERE role IN ('admin', 'tech', 'diretor', 'supervisor')").fetchall()
     conn.close()
     
     return render_template('chamado_form.html',
                          chamado=chamado,
-                         equipamentos=equipamentos,
                          tecnicos=tecnicos,
                          action='editar')
 
@@ -801,11 +693,11 @@ def deletar_chamado(id):
         return redirect(url_for('chamados'))
     
     # Verificar permissão:
-    # Admin pode deletar qualquer chamado
+    # Admin, Diretor e Supervisor podem deletar qualquer chamado
     # Usuário comum só pode deletar seus próprios chamados se estiverem em 'aberto'
     pode_deletar = False
     
-    if session['role'] == 'admin':
+    if session['role'] in ['admin', 'diretor', 'supervisor']:
         pode_deletar = True
     elif chamado['criado_por'] == session['user_id'] and chamado['status'] == 'aberto':
         pode_deletar = True
@@ -826,79 +718,6 @@ def deletar_chamado(id):
     flash(f'Chamado #{numero_chamado} - "{titulo}" excluído com sucesso!', 'success')
     return redirect(url_for('chamados'))
 
-@app.route('/infraestrutura')
-@app.route('/infra')
-@login_required
-def infraestrutura():
-    if not can_access_infraestrutura():
-        flash('Acesso negado! Você não tem permissão para acessar a infraestrutura.', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    conn = get_db_connection()
-    
-    # Paginação
-    page = request.args.get('page', 1, type=int)
-    per_page = 10
-    
-    # Filtros
-    tipo_filter = request.args.get('tipo', '')
-    status_filter = request.args.get('status', '')
-    localizacao_filter = request.args.get('localizacao', '')
-    
-    # Query base
-    base_query = 'SELECT * FROM infraestrutura'
-    count_query = 'SELECT COUNT(*) FROM infraestrutura'
-    
-    params = []
-    conditions = []
-    
-    if tipo_filter:
-        conditions.append('tipo = ?')
-        params.append(tipo_filter)
-    
-    if status_filter:
-        conditions.append('status = ?')
-        params.append(status_filter)
-    
-    if localizacao_filter:
-        conditions.append('localizacao LIKE ?')
-        params.append(f'%{localizacao_filter}%')
-    
-    if conditions:
-        where_clause = ' WHERE ' + ' AND '.join(conditions)
-        base_query += where_clause
-        count_query += where_clause
-    
-    # Contar total de registros
-    total = conn.execute(count_query, params).fetchone()[0]
-    
-    # Query com paginação
-    query = base_query + ' ORDER BY nome LIMIT ? OFFSET ?'
-    offset = (page - 1) * per_page
-    paginated_params = params + [per_page, offset]
-    
-    equipamentos_list = conn.execute(query, paginated_params).fetchall()
-    
-    # Criar objeto de paginação
-    equipamentos = Pagination(equipamentos_list, page, per_page, total)
-    
-    # Listas para filtros
-    tipos = conn.execute('SELECT DISTINCT tipo FROM infraestrutura').fetchall()
-    tipos = [tipo[0] for tipo in tipos]
-    
-    localizacoes = conn.execute('SELECT DISTINCT localizacao FROM infraestrutura').fetchall()
-    localizacoes = [loc[0] for loc in localizacoes]
-    
-    conn.close()
-    
-    return render_template('infraestrutura.html',
-                         equipamentos=equipamentos,
-                         tipos=tipos,
-                         localizacoes=localizacoes,
-                         tipo_filter=tipo_filter,
-                         status_filter=status_filter,
-                         localizacao_filter=localizacao_filter)
-
 # Aliases for blueprint compatibility
 @app.route('/dashboard/index', endpoint='dashboard.index')
 @login_required
@@ -910,67 +729,9 @@ def dashboard_index():
 def chamado_index():
     return redirect(url_for('chamados'))
 
-@app.route('/infra/index', endpoint='infra.index')
-@login_required
-def infra_index():
-    return redirect(url_for('infraestrutura'))
-
 @app.route('/auth/login')
 def auth_login():
     return redirect(url_for('login'))
-
-# Additional aliases for blueprint compatibility
-@app.route('/infra/novo', endpoint='infra.novo')
-@login_required
-def infra_novo():
-    return redirect(url_for('novo_equipamento'))
-
-@app.route('/infra/<int:id>', endpoint='infra.visualizar')
-@login_required
-def infra_visualizar(id):
-    return redirect(url_for('visualizar_equipamento', id=id))
-
-@app.route('/infra/<int:id>/editar', endpoint='infra.editar')
-@login_required
-def infra_editar(id):
-    return redirect(url_for('editar_equipamento', id=id))
-
-@app.route('/infra/<int:id>/deletar', methods=['POST'], endpoint='infra.deletar')
-@login_required
-def infra_deletar(id):
-    # Only admins may delete equipment
-    if session.get('role') != 'admin':
-        flash('Acesso negado!', 'danger')
-        return redirect(url_for('infraestrutura'))
-
-    conn = get_db_connection()
-    # Check for associated chamados
-    chamados_count = conn.execute('SELECT COUNT(*) FROM chamados WHERE equipamento_id = ?', (id,)).fetchone()[0]
-    if chamados_count > 0:
-        flash(f'Não é possível deletar equipamento com {chamados_count} chamado(s) associado(s)!', 'danger')
-        conn.close()
-        return redirect(url_for('visualizar_equipamento', id=id))
-
-    try:
-        conn.execute('DELETE FROM infraestrutura WHERE id = ?', (id,))
-        conn.commit()
-        flash('Equipamento deletado com sucesso!', 'success')
-    except Exception:
-        conn.rollback()
-        flash('Erro ao deletar equipamento!', 'danger')
-    finally:
-        conn.close()
-
-    return redirect(url_for('infraestrutura'))
-
-
-# Backwards-compatible alias: some templates or integrations may call url_for('deletar_equipamento', id=...)
-# Provide an endpoint with that name which redirects to the actual infra deletion endpoint.
-@app.route('/deletar_equipamento/<int:id>', methods=['POST'], endpoint='deletar_equipamento')
-@login_required
-def deletar_equipamento_alias(id):
-    # Preserve method semantics when forwarding: use 307 Temporary Redirect so POST stays POST
-    return redirect(url_for('infra.deletar', id=id), code=307)
 
 @app.route('/chamado/novo', endpoint='chamado.novo')
 @login_required
@@ -990,115 +751,8 @@ def chamado_editar(id):
 @app.route('/chamado/<int:id>/deletar', methods=['POST'], endpoint='chamado.deletar')
 @login_required
 def chamado_deletar(id):
-    return redirect(url_for('deletar_chamado', id=id))
-
-@app.route('/infraestrutura/novo', methods=['GET', 'POST'])
-@login_required
-def novo_equipamento():
-    if not can_access_infraestrutura():
-        flash('Acesso negado! Você não tem permissão para acessar a infraestrutura.', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    if request.method == 'POST':
-        nome = request.form['nome']
-        tipo = request.form['tipo']
-        marca = request.form.get('marca', '')
-        modelo = request.form.get('modelo', '')
-        numero_serie = request.form.get('numero_serie', '')
-        localizacao = request.form['localizacao']
-        responsavel = request.form.get('responsavel', '')
-        status = request.form['status']
-        data_aquisicao = request.form.get('data_aquisicao')
-        observacoes = request.form.get('observacoes', '')
-        
-        conn = get_db_connection()
-        conn.execute('''
-            INSERT INTO infraestrutura (nome, tipo, marca, modelo, numero_serie, localizacao, responsavel, status, data_aquisicao, observacoes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (nome, tipo, marca, modelo, numero_serie, localizacao, responsavel, status, data_aquisicao, observacoes))
-        conn.commit()
-        conn.close()
-        
-        flash('Equipamento cadastrado com sucesso!', 'success')
-        return redirect(url_for('infraestrutura'))
-    
-    return render_template('infra_form.html', action='novo')
-
-@app.route('/infraestrutura/<int:id>')
-@login_required
-def visualizar_equipamento(id):
-    if not can_access_infraestrutura():
-        flash('Acesso negado! Você não tem permissão para acessar a infraestrutura.', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    conn = get_db_connection()
-    equipamento = conn.execute('SELECT * FROM infraestrutura WHERE id = ?', (id,)).fetchone()
-    
-    if not equipamento:
-        flash('Equipamento não encontrado!', 'danger')
-        return redirect(url_for('infraestrutura'))
-    
-    # Buscar chamados relacionados
-    chamados = conn.execute('''
-        SELECT c.*, u.username as criador_nome
-        FROM chamados c
-        JOIN users u ON c.criado_por = u.id
-        WHERE c.equipamento_id = ?
-        ORDER BY c.data_criacao DESC
-        LIMIT 10
-    ''', (id,)).fetchall()
-    
-    conn.close()
-    
-    return render_template('infra_detalhes.html',
-                         equipamento=equipamento,
-                         chamados=chamados)
-
-@app.route('/infraestrutura/<int:id>/editar', methods=['GET', 'POST'])
-@login_required
-def editar_equipamento(id):
-    if not can_access_infraestrutura():
-        flash('Acesso negado! Você não tem permissão para acessar a infraestrutura.', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    conn = get_db_connection()
-    equipamento = conn.execute('SELECT * FROM infraestrutura WHERE id = ?', (id,)).fetchone()
-    
-    if not equipamento:
-        flash('Equipamento não encontrado!', 'danger')
-        return redirect(url_for('infraestrutura'))
-    
-    if request.method == 'POST':
-        nome = request.form['nome']
-        tipo = request.form['tipo']
-        marca = request.form.get('marca', '')
-        modelo = request.form.get('modelo', '')
-        numero_serie = request.form.get('numero_serie', '')
-        localizacao = request.form['localizacao']
-        responsavel = request.form.get('responsavel', '')
-        status = request.form['status']
-        data_aquisicao = request.form.get('data_aquisicao')
-        observacoes = request.form.get('observacoes', '')
-        
-        conn.execute('''
-            UPDATE infraestrutura 
-            SET nome = ?, tipo = ?, marca = ?, modelo = ?, numero_serie = ?, 
-                localizacao = ?, responsavel = ?, status = ?, data_aquisicao = ?, 
-                observacoes = ?, updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-        ''', (nome, tipo, marca, modelo, numero_serie, localizacao, responsavel, 
-              status, data_aquisicao, observacoes, id))
-        
-        conn.commit()
-        conn.close()
-        
-        flash('Equipamento atualizado com sucesso!', 'success')
-        return redirect(url_for('visualizar_equipamento', id=id))
-    
-    conn.close()
-    return render_template('infra_form.html',
-                         equipamento=equipamento,
-                         action='editar')
+    # Usar código 307 para preservar o método POST no redirect
+    return redirect(url_for('deletar_chamado', id=id), code=307)
 
 @app.route('/perfil')
 @login_required
@@ -1260,7 +914,7 @@ def configuracoes():
     # Estatísticas do sistema
     total_usuarios = conn.execute('SELECT COUNT(*) FROM users').fetchone()[0]
     total_chamados = conn.execute('SELECT COUNT(*) FROM chamados').fetchone()[0]
-    total_equipamentos = conn.execute('SELECT COUNT(*) FROM infraestrutura').fetchone()[0]
+    total_servidores = conn.execute('SELECT COUNT(*) FROM servidores').fetchone()[0]
     
     # Usuários por role
     usuarios_por_role = conn.execute('''
@@ -1277,7 +931,7 @@ def configuracoes():
     return render_template('configuracoes.html',
                          total_usuarios=total_usuarios,
                          total_chamados=total_chamados,
-                         total_equipamentos=total_equipamentos,
+                         total_servidores=total_servidores,
                          usuarios_por_role=usuarios_por_role,
                          last_update=last_update)
 
@@ -1431,9 +1085,11 @@ def chat():
     return render_template('chat.html')
 
 @app.route('/api/chat/mensagens', methods=['GET'])
-@login_required
 def get_mensagens():
     """Obter mensagens do chat"""
+    # Verificar se está logado
+    if 'user_id' not in session:
+        return jsonify({'error': 'Não autenticado'}), 401
     conn = get_db_connection()
     
     # Pegar últimas 100 mensagens
@@ -1462,9 +1118,11 @@ def get_mensagens():
     return jsonify({'mensagens': mensagens_list})
 
 @app.route('/api/chat/enviar', methods=['POST'])
-@login_required
 def enviar_mensagem():
     """Enviar mensagem no chat"""
+    # Verificar se está logado
+    if 'user_id' not in session:
+        return jsonify({'error': 'Não autenticado'}), 401
     data = request.get_json()
     mensagem = data.get('mensagem', '').strip()
     
@@ -1503,9 +1161,11 @@ def enviar_mensagem():
     })
 
 @app.route('/api/chat/marcar-lidas', methods=['POST'])
-@login_required
 def marcar_lidas():
     """Marcar mensagens como lidas"""
+    # Verificar se está logado
+    if 'user_id' not in session:
+        return jsonify({'error': 'Não autenticado'}), 401
     conn = get_db_connection()
     
     # Marcar todas as mensagens como lidas (exceto as do próprio usuário)

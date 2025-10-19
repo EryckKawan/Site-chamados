@@ -229,24 +229,24 @@
                         </li>
                         {% endif %}
                         
-                        <!-- Infraestrutura - Diretor, Supervisor, Técnico -->
-                        {% if can_access_infraestrutura() %}
+                        <!-- Armazenamento - Diretor, Supervisor, Técnico -->
+                        {% if can_access_storage() %}
                         <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint.startswith('infraestrutura') %}active{% endif %}" 
-                               href="{{ url_for('infraestrutura') }}">
-                                <i class="bi bi-hdd-stack"></i>
-                                Infraestrutura
+                <a class="nav-link {% if request.endpoint.startswith('servidor') %}active{% endif %}"
+                   href="{{ url_for('servidor.listar_servidores') }}">
+                                <i class="bi bi-hdd-rack"></i>
+                                Armazenamento
                             </a>
                         </li>
                         {% endif %}
                         
-                        <!-- Armazenamento - Diretor, Supervisor, Técnico -->
-                        {% if can_access_storage() %}
+                        <!-- Usuários - Apenas Admin -->
+                        {% if is_admin() %}
                         <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint.startswith('servidor_storage') %}active{% endif %}" 
-                               href="{{ url_for('servidor_storage.listar') }}">
-                                <i class="bi bi-hdd-rack"></i>
-                                Armazenamento
+                            <a class="nav-link {% if request.endpoint == 'gerenciar_usuarios' %}active{% endif %}" 
+                               href="{{ url_for('gerenciar_usuarios') }}">
+                                <i class="bi bi-people"></i>
+                                Usuários
                             </a>
                         </li>
                         {% endif %}

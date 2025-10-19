@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Novo Servidor{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-server"></i> 
+                        {% if action == 'novo-servidor' %}Novo Servidor{% else %}Editar Servidor{% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="nome" class="form-label">Nome do Servidor *</label>
+                                    <input type="text" class="form-control" id="nome" name="nome" 
+                                           value="{{ servidor.nome if servidor else '' }}" required>
+                                    <div class="form-text">Ex: SRV01, WEB-SERVER, DB-PRIMARY</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="ip_endereco" class="form-label">IP/Endereço</label>
+                                    <input type="text" class="form-control" id="ip_endereco" name="ip_endereco" 
+                                           value="{{ servidor.ip_endereco if servidor else '' }}">
+                                    <div class="form-text">Ex: 192.168.1.100, servidor.empresa.com</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="sistema_operacional" class="form-label">Sistema Operacional</label>
+                                    <select class="form-select" id="sistema_operacional" name="sistema_operacional">
+                                        <option value="">Selecione...</option>
+                                        <option value="Windows Server 2022" {% if servidor and servidor.sistema_operacional == 'Windows Server 2022' %}selected{% endif %}>Windows Server 2022</option>
+                                        <option value="Windows Server 2019" {% if servidor and servidor.sistema_operacional == 'Windows Server 2019' %}selected{% endif %}>Windows Server 2019</option>
+                                        <option value="Ubuntu Server 22.04" {% if servidor and servidor.sistema_operacional == 'Ubuntu Server 22.04' %}selected{% endif %}>Ubuntu Server 22.04</option>
+                                        <option value="Ubuntu Server 20.04" {% if servidor and servidor.sistema_operacional == 'Ubuntu Server 20.04' %}selected{% endif %}>Ubuntu Server 20.04</option>
+                                        <option value="CentOS 8" {% if servidor and servidor.sistema_operacional == 'CentOS 8' %}selected{% endif %}>CentOS 8</option>
+                                        <option value="Red Hat Enterprise Linux" {% if servidor and servidor.sistema_operacional == 'Red Hat Enterprise Linux' %}selected{% endif %}>Red Hat Enterprise Linux</option>
+                                        <option value="Debian" {% if servidor and servidor.sistema_operacional == 'Debian' %}selected{% endif %}>Debian</option>
+                                        <option value="VMware ESXi" {% if servidor and servidor.sistema_operacional == 'VMware ESXi' %}selected{% endif %}>VMware ESXi</option>
+                                        <option value="Proxmox" {% if servidor and servidor.sistema_operacional == 'Proxmox' %}selected{% endif %}>Proxmox</option>
+                                        <option value="Outro" {% if servidor and servidor.sistema_operacional == 'Outro' %}selected{% endif %}>Outro</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="descricao" class="form-label">Descrição</label>
+                                    <input type="text" class="form-control" id="descricao" name="descricao" 
+                                           value="{{ servidor.descricao if servidor else '' }}">
+                                    <div class="form-text">Breve descrição da função do servidor</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="observacoes" class="form-label">Observações</label>
+                            <textarea class="form-control" id="observacoes" name="observacoes" rows="3">{{ servidor.observacoes if servidor else '' }}</textarea>
+                            <div class="form-text">Informações adicionais sobre o servidor</div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('servidor.listar_servidores') }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Voltar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> 
+                                {% if action == 'novo-servidor' %}Criar Servidor{% else %}Salvar Alterações{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

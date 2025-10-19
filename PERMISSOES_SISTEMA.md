@@ -17,7 +17,6 @@
 **Visão Completa Operacional**
 - ✅ Dashboard
 - ✅ Chamados (todos)
-- ✅ Infraestrutura
 - ✅ Armazenamento de Servidores
 - ✅ Chat
 - ❌ Funções/Cargos (apenas admin)
@@ -27,7 +26,6 @@
 **Gestão Técnica Completa**
 - ✅ Dashboard
 - ✅ Chamados (todos)
-- ✅ Infraestrutura
 - ✅ Armazenamento de Servidores
 - ✅ Chat
 - ❌ Funções/Cargos (apenas admin)
@@ -37,7 +35,6 @@
 **Suporte Técnico**
 - ✅ Dashboard
 - ✅ Chamados (todos)
-- ✅ Infraestrutura
 - ✅ Armazenamento de Servidores
 - ✅ Chat
 - ❌ Funções/Cargos (apenas admin)
@@ -48,7 +45,6 @@
 - ✅ Dashboard
 - ✅ Chamados (todos)
 - ✅ Chat
-- ❌ Infraestrutura
 - ❌ Armazenamento de Servidores
 - ❌ Funções/Cargos
 - ❌ Configurações
@@ -57,7 +53,6 @@
 **Acesso Básico**
 - ✅ Dashboard
 - ✅ Chamados (apenas os próprios)
-- ❌ Infraestrutura
 - ❌ Armazenamento
 - ❌ Funções/Cargos
 - ❌ Configurações
@@ -78,9 +73,6 @@ Retorna `True` apenas para administrativo
 
 ### `can_access_chamados()`
 Retorna `True` para: todos (admin, diretor, supervisor, tech, administrativo, user)
-
-### `can_access_infraestrutura()`
-Retorna `True` para: admin, diretor, supervisor, tech
 
 ### `can_access_storage()`
 Retorna `True` para: admin, diretor, supervisor, tech
@@ -135,7 +127,6 @@ As labels das roles são armazenadas na tabela `role_names` e podem ser customiz
 |--------|-------|---------|------------|---------|----------------|---------|
 | Dashboard | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Chamados | ✅ Todos | ✅ Todos | ✅ Todos | ✅ Todos | ✅ Todos | ✅ Próprios |
-| Infraestrutura | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
 | Armazenamento | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
 | Funções | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Configurações | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |

@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+
+{% block title %}Armazenamento de Servidores{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">📦 Armazenamento de Servidores</h2>
+                    <p class="text-muted mb-0">Monitoramento de armazenamento por servidor</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('servidor.novo_servidor') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Novo Servidor
+                    </a>
+                </div>
+            </div>
+
+            {% if servidores %}
+            <div class="row">
+                {% for servidor in servidores %}
+                <div class="col-lg-6 col-xl-4 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-server"></i> {{ servidor.nome }}
+                                </h5>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-light" type="button" data-bs-toggle="dropdown">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="{{ url_for('servidor.novo_armazenamento', servidor_id=servidor.id) }}">
+                                            <i class="bi bi-plus-circle"></i> Adicionar Armazenamento
+                                        </a></li>
+                                        {% if session.role == 'admin' %}
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <button type="button" class="dropdown-item text-danger" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#deleteServidorModal{{ servidor.id }}">
+                                                <i class="bi bi-trash"></i> Deletar Servidor
+                                            </button>
+                                        </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-body">
+                            <!-- Informações do Servidor -->
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <small class="text-muted">IP/Endereço:</small><br>
+                                    <strong>{{ servidor.ip_endereco or 'N/A' }}</strong>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Sistema Operacional:</small><br>
+                                    <strong>{{ servidor.sistema_operacional or 'N/A' }}</strong>
+                                </div>
+                            </div>
+
+                            <!-- Resumo Total do Servidor -->
+                            <div class="alert alert-info mb-3">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <div class="fw-bold text-primary">{{ servidor.capacidade_total_gb }} GB</div>
+                                        <small class="text-muted">Total</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="fw-bold text-success">{{ servidor.livre_total_gb }} GB</div>
+                                        <small class="text-muted">Livre</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="fw-bold text-{{ servidor.status_cor_total }}">{{ servidor.percentual_uso_total }}%</div>
+                                        <small class="text-muted">Usado</small>
+                                    </div>
+                                </div>
+                                <div class="progress mt-2" style="height: 8px;">
+                                    <div class="progress-bar bg-{{ servidor.status_cor_total }}" 
+                                         style="width: {{ servidor.percentual_uso_total }}%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Lista de Armazenamentos -->
+                            <h6 class="mb-3">
+                                <i class="bi bi-hdd-rack"></i> 
+                                Armazenamentos ({{ servidor.total_armazenamentos }})
+                            </h6>
+                            
+                            {% if servidor.armazenamentos %}
+                            <div class="list-group list-group-flush">
+                                {% for armazenamento in servidor.armazenamentos %}
+                                <div class="list-group-item px-0 py-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi {{ armazenamento.tipo_icone }} me-2 text-{{ armazenamento.status_cor }}"></i>
+                                                <div>
+                                                    <strong>{{ armazenamento.nome }}</strong>
+                                                    <small class="text-muted d-block">{{ armazenamento.tipo }} • {{ armazenamento.capacidade_valor }} {{ armazenamento.capacidade_unidade }}</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge bg-{{ armazenamento.status_cor }} me-2">{{ armazenamento.percentual_uso }}%</span>
+                                                <div class="dropdown">
+                                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                                        <i class="bi bi-three-dots-vertical"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a class="dropdown-item" href="{{ url_for('servidor.editar_armazenamento', armazenamento_id=armazenamento.id) }}">
+                                                            <i class="bi bi-pencil"></i> Editar
+                                                        </a></li>
+                                                        {% if session.role == 'admin' %}
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li>
+                                                            <button type="button" class="dropdown-item text-danger" 
+                                                                    data-bs-toggle="modal" 
+                                                                    data-bs-target="#deleteArmazenamentoModal{{ armazenamento.id }}">
+                                                                <i class="bi bi-trash"></i> Deletar
+                                                            </button>
+                                                        </li>
+                                                        {% endif %}
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="progress mt-1" style="height: 4px; width: 60px;">
+                                                <div class="progress-bar bg-{{ armazenamento.status_cor }}" 
+                                                     style="width: {{ armazenamento.percentual_uso }}%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-3">
+                                <i class="bi bi-hdd text-muted" style="font-size: 2rem;"></i>
+                                <p class="text-muted mb-0">Nenhum armazenamento configurado</p>
+                                <a href="{{ url_for('servidor.novo_armazenamento', servidor_id=servidor.id) }}" class="btn btn-sm btn-outline-primary mt-2">
+                                    <i class="bi bi-plus-circle"></i> Adicionar Primeiro
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="card-footer bg-light">
+                            <small class="text-muted">
+                                <i class="bi bi-calendar"></i> Criado em {{ servidor.created_at[:10] }}
+                                {% if servidor.observacoes %}
+                                <br><i class="bi bi-info-circle"></i> {{ servidor.observacoes[:50] }}{% if servidor.observacoes|length > 50 %}...{% endif %}
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-server text-muted" style="font-size: 4rem;"></i>
+                <h4 class="text-muted mt-3">Nenhum servidor encontrado</h4>
+                <p class="text-muted">Comece adicionando seu primeiro servidor para monitorar o armazenamento.</p>
+                <a href="{{ url_for('servidor.novo_servidor') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Adicionar Primeiro Servidor
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modais de Confirmação de Exclusão -->
+{% if session.role == 'admin' %}
+    {% for servidor in servidores %}
+    <!-- Modal de Exclusão de Servidor -->
+    <div class="modal fade" id="deleteServidorModal{{ servidor.id }}" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border: 2px solid #dc3545;">
+                <div class="modal-header bg-danger text-white" style="border-bottom: none;">
+                    <h5 class="modal-title">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Confirmar Exclusão de Servidor
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <div class="mb-3">
+                        <i class="bi bi-server text-danger" style="font-size: 3rem;"></i>
+                    </div>
+                    <h6>Tem certeza que deseja deletar o servidor:</h6>
+                    <p class="fs-5 fw-bold text-danger mb-3">{{ servidor.nome }}</p>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Atenção:</strong> Todos os {{ servidor.total_armazenamentos }} armazenamento(s) serão deletados também!
+                    </div>
+                    <p class="text-muted small mb-0">
+                        <i class="bi bi-info-circle"></i> Esta ação não pode ser desfeita.
+                    </p>
+                </div>
+                <div class="modal-footer justify-content-center" style="border-top: 1px solid #dee2e6;">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
+                    <form action="{{ url_for('servidor.deletar_servidor', servidor_id=servidor.id) }}" method="POST" style="display: inline;">
+                        <button type="submit" class="btn btn-danger px-4">
+                            <i class="bi bi-trash-fill"></i> Sim, Deletar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modais de Exclusão de Armazenamentos -->
+    {% for armazenamento in servidor.armazenamentos %}
+    <div class="modal fade" id="deleteArmazenamentoModal{{ armazenamento.id }}" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border: 2px solid #dc3545;">
+                <div class="modal-header bg-danger text-white" style="border-bottom: none;">
+                    <h5 class="modal-title">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Confirmar Exclusão de Armazenamento
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <div class="mb-3">
+                        <i class="bi bi-hdd text-danger" style="font-size: 3rem;"></i>
+                    </div>
+                    <h6>Tem certeza que deseja deletar o armazenamento:</h6>
+                    <p class="fs-5 fw-bold text-danger mb-3">{{ armazenamento.nome }}</p>
+                    <p class="text-muted small mb-0">
+                        <i class="bi bi-info-circle"></i> Esta ação não pode ser desfeita.
+                    </p>
+                </div>
+                <div class="modal-footer justify-content-center" style="border-top: 1px solid #dee2e6;">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
+                    <form action="{{ url_for('servidor.deletar_armazenamento', armazenamento_id=armazenamento.id) }}" method="POST" style="display: inline;">
+                        <button type="submit" class="btn btn-danger px-4">
+                            <i class="bi bi-trash-fill"></i> Sim, Deletar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% endfor %}
+{% endif %}
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Estabilizar modais - evitar qualquer movimento */
+.modal {
+    --bs-modal-zindex: 1055;
+}
+
+.modal-dialog {
+    max-width: 500px;
+    margin: 1.75rem auto;
+}
+
+.modal-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    pointer-events: auto;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid rgba(0,0,0,.2);
+    border-radius: 0.5rem;
+    outline: 0;
+}
+
+.modal-dialog-centered {
+    display: flex;
+    align-items: center;
+    min-height: calc(100% - 3.5rem);
+}
+
+/* Evitar qualquer animação ou transição indesejada no modal */
+.modal *, .modal *:before, .modal *:after {
+    -webkit-transition: none !important;
+    -moz-transition: none !important;
+    -o-transition: none !important;
+    transition: none !important;
+}
+
+/* Botões do modal fixos */
+.modal-footer .btn {
+    min-width: 120px;
+    font-weight: 600;
+}
+
+.modal-footer {
+    padding: 1rem;
+    background-color: #f8f9fa;
+}
+
+.modal-body {
+    position: relative;
+    flex: 1 1 auto;
+    padding: 1rem;
+}
+
+/* Melhorar visual dos cards */
+.card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.list-group-item {
+    border: none;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+</style>
+{% endblock %}

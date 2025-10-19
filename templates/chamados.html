@@ -228,24 +228,32 @@
 </div>
 
 <!-- Delete Confirmation Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
+<div class="modal fade" id="deleteModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border: 2px solid #dc3545;">
+            <div class="modal-header bg-danger text-white" style="border-bottom: none;">
                 <h5 class="modal-title">
-                    <i class="bi bi-exclamation-triangle text-danger"></i> Confirmar Exclusão
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Confirmar Exclusão
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <p>Tem certeza que deseja deletar este chamado?</p>
-                <p class="text-muted small">Esta ação não pode ser desfeita.</p>
+            <div class="modal-body text-center py-4">
+                <div class="mb-3">
+                    <i class="bi bi-trash text-danger" style="font-size: 3rem;"></i>
+                </div>
+                <h6>Tem certeza que deseja deletar este chamado?</h6>
+                <p class="text-muted small mb-0">
+                    <i class="bi bi-info-circle"></i> Esta ação não pode ser desfeita.
+                </p>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <div class="modal-footer justify-content-center" style="border-top: 1px solid #dee2e6;">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </button>
                 <form id="deleteForm" method="POST" style="display: inline;">
-                    <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-trash"></i> Deletar
+                    <button type="submit" class="btn btn-danger px-4">
+                        <i class="bi bi-trash-fill"></i> Sim, Deletar
                     </button>
                 </form>
             </div>
@@ -269,4 +277,62 @@ setTimeout(function() {
     location.reload();
 }, 300000);
 </script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Estabilizar modais - evitar qualquer movimento */
+.modal {
+    --bs-modal-zindex: 1055;
+}
+
+.modal-dialog {
+    max-width: 500px;
+    margin: 1.75rem auto;
+}
+
+.modal-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    pointer-events: auto;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid rgba(0,0,0,.2);
+    border-radius: 0.5rem;
+    outline: 0;
+}
+
+.modal-dialog-centered {
+    display: flex;
+    align-items: center;
+    min-height: calc(100% - 3.5rem);
+}
+
+/* Evitar qualquer animação ou transição indesejada no modal */
+.modal *, .modal *:before, .modal *:after {
+    -webkit-transition: none !important;
+    -moz-transition: none !important;
+    -o-transition: none !important;
+    transition: none !important;
+}
+
+/* Botões do modal fixos */
+.modal-footer .btn {
+    min-width: 120px;
+    font-weight: 600;
+}
+
+.modal-footer {
+    padding: 1rem;
+    background-color: #f8f9fa;
+}
+
+.modal-body {
+    position: relative;
+    flex: 1 1 auto;
+    padding: 1rem;
+}
+</style>
 {% endblock %}

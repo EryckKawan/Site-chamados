@@ -1,6 +1,5 @@
 from .user import User, db
 from .chamado import Chamado
-from .infraestrutura import Infraestrutura
 
-__all__ = ['User', 'Chamado', 'Infraestrutura', 'db']
+__all__ = ['User', 'Chamado', 'db']
 
