@@ -165,7 +165,7 @@ def to_datetime_filter(value):
     return None
 
 # Importar configuração de banco de dados
-from database import get_db_connection, init_db, USE_POSTGRES
+from database import get_db_connection, init_db, USE_POSTGRES, convert_query
 
 # Manter compatibilidade (não usado mais, mas para não quebrar código antigo)
 DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'chamados_ti.db')

@@ -10,6 +10,45 @@ from urllib.parse import urlparse
 DATABASE_URL = os.environ.get('DATABASE_URL')
 USE_POSTGRES = DATABASE_URL is not None
 
+class DatabaseConnection:
+    """Wrapper para conexões de banco que converte queries automaticamente"""
+    def __init__(self, conn):
+        self._conn = conn
+        self.row_factory = getattr(conn, 'row_factory', None)
+    
+    def cursor(self):
+        """Retorna cursor do banco"""
+        return self._conn.cursor()
+    
+    def execute(self, query, params=None):
+        """Executa query convertendo placeholders se necessário"""
+        if USE_POSTGRES:
+            query = query.replace('?', '%s')
+        
+        cursor = self._conn.cursor()
+        if params:
+            cursor.execute(query, params)
+        else:
+            cursor.execute(query)
+        return cursor
+    
+    def commit(self):
+        return self._conn.commit()
+    
+    def close(self):
+        return self._conn.close()
+    
+    def rollback(self):
+        return self._conn.rollback()
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            self.rollback()
+        self.close()
+
 if USE_POSTGRES:
     # PostgreSQL
     import psycopg2
@@ -22,10 +61,13 @@ if USE_POSTGRES:
     print("🐘 Usando PostgreSQL em produção")
     
     def get_db_connection():
-        """Conexão PostgreSQL"""
+        """Conexão PostgreSQL com wrapper"""
         conn = psycopg2.connect(DATABASE_URL)
-        conn.cursor_factory = RealDictCursor
-        return conn
+        return DatabaseConnection(conn)
+    
+    def convert_query(query):
+        """Converte placeholders SQLite (?) para PostgreSQL (%s)"""
+        return query.replace('?', '%s')
     
 else:
     # SQLite (desenvolvimento)
@@ -33,10 +75,14 @@ else:
     print(f"📁 Usando SQLite: {DATABASE}")
     
     def get_db_connection():
-        """Conexão SQLite"""
+        """Conexão SQLite com wrapper"""
         conn = sqlite3.connect(DATABASE)
         conn.row_factory = sqlite3.Row
-        return conn
+        return DatabaseConnection(conn)
+    
+    def convert_query(query):
+        """Em SQLite, mantém os placeholders (?)"""
+        return query
 
 
 def init_db():
