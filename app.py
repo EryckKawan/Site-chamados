@@ -332,34 +332,63 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def get_user_role():
+    """Retorna a role do usuário atual"""
+    if 'user_id' not in session:
+        return None
+    return session.get('role')
+
 def is_admin():
     """Verifica se usuário atual é admin"""
-    if 'user_id' not in session:
-        return False
-    try:
-        conn = get_db_connection()
-        user = conn.execute('SELECT role FROM users WHERE id = ?', (session['user_id'],)).fetchone()
-        conn.close()
-        return user is not None and user['role'] == 'admin'
-    except Exception:
-        return False
+    return get_user_role() == 'admin'
 
 def is_tech():
-    """Verifica se usuário atual é técnico ou admin"""
-    if 'user_id' not in session:
-        return False
-    try:
-        conn = get_db_connection()
-        user = conn.execute('SELECT role FROM users WHERE id = ?', (session['user_id'],)).fetchone()
-        conn.close()
-        return user is not None and user['role'] in ['admin', 'tech']
-    except Exception:
-        return False
+    """
+    Verifica se usuário tem acesso técnico completo
+    Diretor, Supervisor e Técnico veem TUDO
+    """
+    role = get_user_role()
+    return role in ['admin', 'diretor', 'supervisor', 'tech']
 
-# Função para traduzir roles (labels customizáveis)
+def is_administrativo():
+    """
+    Verifica se usuário é administrativo
+    Administrativo vê apenas Chamados e Chat
+    """
+    return get_user_role() == 'administrativo'
+
+def can_access_chamados():
+    """Verifica se pode acessar chamados"""
+    role = get_user_role()
+    return role in ['admin', 'diretor', 'supervisor', 'tech', 'administrativo', 'user']
+
+def can_access_infraestrutura():
+    """Verifica se pode acessar infraestrutura"""
+    role = get_user_role()
+    return role in ['admin', 'diretor', 'supervisor', 'tech']
+
+def can_access_storage():
+    """Verifica se pode acessar armazenamento de servidores"""
+    role = get_user_role()
+    return role in ['admin', 'diretor', 'supervisor', 'tech']
+
+def can_access_funcoes():
+    """Verifica se pode acessar funções"""
+    return get_user_role() == 'admin'
+
+def can_access_configuracoes():
+    """Verifica se pode acessar configurações"""
+    return get_user_role() == 'admin'
+
+def can_access_chat():
+    """Verifica se pode acessar chat"""
+    role = get_user_role()
+    return role in ['admin', 'diretor', 'supervisor', 'tech', 'administrativo']
+
+# Função para traduzir roles (labels customizáveis) e injetar permissões
 @app.context_processor
-def inject_role_label():
-    """Injeta a função role_label nos templates"""
+def inject_permissions():
+    """Injeta funções de permissão e role_label nos templates"""
     def role_label(role_key):
         """Retorna o label do role da tabela role_names ou valor padrão"""
         try:
@@ -373,11 +402,26 @@ def inject_role_label():
         # Valores padrão caso não exista na tabela
         defaults = {
             'admin': 'Administrador',
+            'diretor': 'Diretor',
+            'supervisor': 'Supervisor',
             'tech': 'Técnico',
+            'administrativo': 'Administrativo',
             'user': 'Usuário'
         }
         return defaults.get(role_key, role_key)
-    return dict(role_label=role_label)
+    
+    return dict(
+        role_label=role_label,
+        can_access_chamados=can_access_chamados,
+        can_access_infraestrutura=can_access_infraestrutura,
+        can_access_storage=can_access_storage,
+        can_access_funcoes=can_access_funcoes,
+        can_access_configuracoes=can_access_configuracoes,
+        can_access_chat=can_access_chat,
+        is_admin=is_admin,
+        is_tech=is_tech,
+        is_administrativo=is_administrativo
+    )
 
 @app.route('/')
 def index():
@@ -786,8 +830,8 @@ def deletar_chamado(id):
 @app.route('/infra')
 @login_required
 def infraestrutura():
-    if not is_tech():
-        flash('Acesso negado!', 'danger')
+    if not can_access_infraestrutura():
+        flash('Acesso negado! Você não tem permissão para acessar a infraestrutura.', 'danger')
         return redirect(url_for('dashboard'))
     
     conn = get_db_connection()
@@ -951,8 +995,8 @@ def chamado_deletar(id):
 @app.route('/infraestrutura/novo', methods=['GET', 'POST'])
 @login_required
 def novo_equipamento():
-    if not is_tech():
-        flash('Acesso negado!', 'danger')
+    if not can_access_infraestrutura():
+        flash('Acesso negado! Você não tem permissão para acessar a infraestrutura.', 'danger')
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
@@ -983,8 +1027,8 @@ def novo_equipamento():
 @app.route('/infraestrutura/<int:id>')
 @login_required
 def visualizar_equipamento(id):
-    if not is_tech():
-        flash('Acesso negado!', 'danger')
+    if not can_access_infraestrutura():
+        flash('Acesso negado! Você não tem permissão para acessar a infraestrutura.', 'danger')
         return redirect(url_for('dashboard'))
     
     conn = get_db_connection()
@@ -1013,8 +1057,8 @@ def visualizar_equipamento(id):
 @app.route('/infraestrutura/<int:id>/editar', methods=['GET', 'POST'])
 @login_required
 def editar_equipamento(id):
-    if not is_tech():
-        flash('Acesso negado!', 'danger')
+    if not can_access_infraestrutura():
+        flash('Acesso negado! Você não tem permissão para acessar a infraestrutura.', 'danger')
         return redirect(url_for('dashboard'))
     
     conn = get_db_connection()

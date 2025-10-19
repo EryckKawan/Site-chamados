@@ -218,6 +218,8 @@
                                 Dashboard
                             </a>
                         </li>
+                        <!-- Chamados - Todos podem ver -->
+                        {% if can_access_chamados() %}
                         <li class="nav-item">
                             <a class="nav-link {% if request.endpoint.startswith('chamados') %}active{% endif %}" 
                                href="{{ url_for('chamados') }}">
@@ -225,6 +227,10 @@
                                 Chamados
                             </a>
                         </li>
+                        {% endif %}
+                        
+                        <!-- Infraestrutura - Diretor, Supervisor, Técnico -->
+                        {% if can_access_infraestrutura() %}
                         <li class="nav-item">
                             <a class="nav-link {% if request.endpoint.startswith('infraestrutura') %}active{% endif %}" 
                                href="{{ url_for('infraestrutura') }}">
@@ -232,6 +238,10 @@
                                 Infraestrutura
                             </a>
                         </li>
+                        {% endif %}
+                        
+                        <!-- Armazenamento - Diretor, Supervisor, Técnico -->
+                        {% if can_access_storage() %}
                         <li class="nav-item">
                             <a class="nav-link {% if request.endpoint.startswith('servidor_storage') %}active{% endif %}" 
                                href="{{ url_for('servidor_storage.listar') }}">
@@ -239,7 +249,10 @@
                                 Armazenamento
                             </a>
                         </li>
-                        {% if session.role == 'admin' %}
+                        {% endif %}
+                        
+                        <!-- Funções - Apenas Admin -->
+                        {% if can_access_funcoes() %}
                         <li class="nav-item">
                             <a class="nav-link {% if request.endpoint.startswith('funcao') %}active{% endif %}" 
                                href="{{ url_for('funcao.listar_funcoes') }}">
@@ -248,6 +261,9 @@
                             </a>
                         </li>
                         {% endif %}
+                        
+                        <!-- Chat - Diretor, Supervisor, Técnico, Administrativo -->
+                        {% if can_access_chat() %}
                         <li class="nav-item">
                             <a class="nav-link {% if request.endpoint == 'chat' %}active{% endif %}" 
                                href="{{ url_for('chat') }}">
@@ -255,6 +271,7 @@
                                 Chat Suporte
                             </a>
                         </li>
+                        {% endif %}
                         <li class="nav-item mt-3">
                             <a class="nav-link" href="{{ url_for('logout') }}">
                                 <i class="bi bi-box-arrow-right"></i>

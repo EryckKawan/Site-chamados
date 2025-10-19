@@ -29,22 +29,20 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-def is_tech():
-    """Verifica se usuário atual é técnico ou admin"""
+def can_access_storage():
+    """Verifica se usuário pode acessar armazenamento"""
     if 'user_id' not in session:
         return False
-    conn = get_db_connection()
-    user = conn.execute('SELECT role FROM users WHERE id = ?', (session['user_id'],)).fetchone()
-    conn.close()
-    return user and user['role'] in ['admin', 'tech']
+    role = session.get('role')
+    return role in ['admin', 'diretor', 'supervisor', 'tech']
 
 
 @servidor_storage_bp.route('/')
 @login_required
 def listar():
     """Lista todos os servidores de armazenamento"""
-    if not is_tech():
-        flash('Acesso negado! Apenas técnicos e administradores.', 'danger')
+    if not can_access_storage():
+        flash('Acesso negado! Você não tem permissão para acessar o armazenamento de servidores.', 'danger')
         return redirect(url_for('dashboard'))
     
     conn = get_db_connection()
@@ -97,8 +95,8 @@ def listar():
 @login_required
 def novo():
     """Adiciona um novo servidor de armazenamento"""
-    if not is_tech():
-        flash('Acesso negado! Apenas técnicos e administradores.', 'danger')
+    if not can_access_storage():
+        flash('Acesso negado! Você não tem permissão para acessar o armazenamento de servidores.', 'danger')
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
@@ -128,8 +126,8 @@ def novo():
 @login_required
 def editar(id):
     """Edita um servidor de armazenamento existente"""
-    if not is_tech():
-        flash('Acesso negado! Apenas técnicos e administradores.', 'danger')
+    if not can_access_storage():
+        flash('Acesso negado! Você não tem permissão para acessar o armazenamento de servidores.', 'danger')
         return redirect(url_for('dashboard'))
     
     conn = get_db_connection()
