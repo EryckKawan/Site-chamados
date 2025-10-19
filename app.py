@@ -6,6 +6,7 @@ import os
 import math
 from routes.funcao_routes import funcao_bp
 from routes.servidor_routes import servidor_bp
+from urllib.parse import urlparse
 
 app = Flask(__name__)
 
@@ -163,11 +164,13 @@ def to_datetime_filter(value):
     
     return None
 
-# Configuração do banco de dados
-import os
+# Importar configuração de banco de dados
+from database import get_db_connection, init_db, USE_POSTGRES
+
+# Manter compatibilidade (não usado mais, mas para não quebrar código antigo)
 DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'chamados_ti.db')
 
-def init_db():
+def init_db_old():
     """Inicializa o banco de dados"""
     # Garantir que o diretório existe
     os.makedirs(os.path.dirname(DATABASE) if os.path.dirname(DATABASE) else '.', exist_ok=True)
@@ -259,11 +262,7 @@ def init_db():
     conn.commit()
     conn.close()
 
-def get_db_connection():
-    """Obtém conexão com o banco de dados"""
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    return conn
+# get_db_connection agora vem de database.py
 
 def login_required(f):
     """Decorator para rotas que requerem login"""
