@@ -5,12 +5,14 @@ import sqlite3
 import os
 import math
 from routes.funcao_routes import funcao_bp
+from routes.servidor_storage_routes import servidor_storage_bp
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'sua-chave-secreta-aqui'
 
 # Registrando blueprints
 app.register_blueprint(funcao_bp)
+app.register_blueprint(servidor_storage_bp)
 
 class Pagination:
     """Simple pagination class to mimic Flask-SQLAlchemy pagination"""
@@ -342,6 +344,25 @@ def is_tech():
     conn.close()
     return user and user['role'] in ['admin', 'tech']
 
+# Função para traduzir roles (labels customizáveis)
+@app.context_processor
+def inject_role_label():
+    """Injeta a função role_label nos templates"""
+    def role_label(role_key):
+        """Retorna o label do role da tabela role_names ou valor padrão"""
+        conn = get_db_connection()
+        result = conn.execute('SELECT label FROM role_names WHERE role_key = ?', (role_key,)).fetchone()
+        conn.close()
+        if result:
+            return result['label']
+        # Valores padrão caso não exista na tabela
+        defaults = {
+            'admin': 'Administrador',
+            'tech': 'Técnico',
+            'user': 'Usuário'
+        }
+        return defaults.get(role_key, role_key)
+    return dict(role_label=role_label)
 
 @app.route('/')
 def index():

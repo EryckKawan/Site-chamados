@@ -232,6 +232,13 @@
                                 Infraestrutura
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint.startswith('servidor_storage') %}active{% endif %}" 
+                               href="{{ url_for('servidor_storage.listar') }}">
+                                <i class="bi bi-hdd-rack"></i>
+                                Armazenamento
+                            </a>
+                        </li>
                         {% if session.role == 'admin' %}
                         <li class="nav-item">
                             <a class="nav-link {% if request.endpoint.startswith('funcao') %}active{% endif %}" 
