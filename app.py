@@ -1212,45 +1212,75 @@ def get_mensagens():
 @app.route('/api/chat/enviar', methods=['POST'])
 def enviar_mensagem():
     """Enviar mensagem no chat"""
+    print("📤 Recebida requisição para enviar mensagem")
+    
     # Verificar se está logado
     if 'user_id' not in session:
+        print("❌ Usuário não autenticado")
         return jsonify({'error': 'Não autenticado'}), 401
-    data = request.get_json()
-    mensagem = data.get('mensagem', '').strip()
     
-    if not mensagem:
-        return jsonify({'error': 'Mensagem vazia'}), 400
-    
-    conn = get_db_connection()
-    
-    # Inserir mensagem
-    conn.execute('''
-        INSERT INTO chat_mensagens (user_id, username, mensagem)
-        VALUES (?, ?, ?)
-    ''', (session['user_id'], session['username'], mensagem))
-    
-    conn.commit()
-    
-    # Pegar a mensagem inserida
-    msg = conn.execute('''
-        SELECT id, user_id, username, mensagem, data_envio, lida
-        FROM chat_mensagens
-        WHERE id = last_insert_rowid()
-    ''').fetchone()
-    
-    conn.close()
-    
-    return jsonify({
-        'success': True,
-        'mensagem': {
-            'id': msg['id'],
-            'user_id': msg['user_id'],
-            'username': msg['username'],
-            'mensagem': msg['mensagem'],
-            'data_envio': msg['data_envio'],
-            'is_me': True
+    try:
+        data = request.get_json()
+        print("📨 Dados recebidos:", data)
+        
+        if not data:
+            print("❌ Dados JSON inválidos")
+            return jsonify({'error': 'Dados inválidos'}), 400
+            
+        mensagem = data.get('mensagem', '').strip()
+        print("💬 Mensagem:", mensagem)
+        
+        if not mensagem:
+            print("❌ Mensagem vazia")
+            return jsonify({'error': 'Mensagem vazia'}), 400
+        
+        conn = get_db_connection()
+        
+        # Inserir mensagem
+        cursor = conn.execute('''
+            INSERT INTO chat_mensagens (user_id, username, mensagem)
+            VALUES (?, ?, ?)
+        ''', (session['user_id'], session['username'], mensagem))
+        
+        mensagem_id = cursor.lastrowid
+        print(f"✅ Mensagem inserida com ID: {mensagem_id}")
+        
+        conn.commit()
+        
+        # Buscar a mensagem inserida
+        mensagem_inserida = conn.execute('''
+            SELECT id, user_id, username, mensagem, data_envio, lida
+            FROM chat_mensagens
+            WHERE id = ?
+        ''', (mensagem_id,)).fetchone()
+        
+        conn.close()
+        
+        if not mensagem_inserida:
+            print("❌ Erro ao buscar mensagem inserida")
+            return jsonify({'error': 'Erro ao buscar mensagem'}), 500
+        
+        # Converter para dict
+        mensagem_dict = {
+            'id': mensagem_inserida['id'],
+            'user_id': mensagem_inserida['user_id'],
+            'username': mensagem_inserida['username'],
+            'mensagem': mensagem_inserida['mensagem'],
+            'data_envio': mensagem_inserida['data_envio'],
+            'lida': mensagem_inserida['lida'],
+            'is_me': mensagem_inserida['user_id'] == session['user_id']
         }
-    })
+        
+        print("📤 Retornando mensagem:", mensagem_dict)
+        
+        return jsonify({
+            'success': True,
+            'mensagem': mensagem_dict
+        })
+        
+    except Exception as e:
+        print(f"❌ Erro ao enviar mensagem: {e}")
+        return jsonify({'error': f'Erro interno: {str(e)}'}), 500
 
 @app.route('/api/chat/marcar-lidas', methods=['POST'])
 def marcar_lidas():

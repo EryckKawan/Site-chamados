@@ -270,24 +270,32 @@ $(document).ready(function() {
 });
 
 function carregarMensagens() {
+    console.log('🔄 Carregando mensagens...');
+    
     fetch('/api/chat/mensagens')
         .then(response => {
+            console.log('📡 Status da resposta:', response.status);
             if (response.status === 401) {
-                console.log('Não autenticado - redirecionando para login');
+                console.log('❌ Não autenticado - redirecionando para login');
                 window.location.href = '/login';
                 return;
             }
             return response.json();
         })
         .then(data => {
+            console.log('📨 Dados recebidos:', data);
+            
             if (data && data.mensagens && data.mensagens.length > 0) {
+                console.log(`📝 ${data.mensagens.length} mensagens encontradas`);
                 $('#noMessages').hide();
                 
                 // Verificar se há novas mensagens
                 const novasMensagens = data.mensagens.filter(m => m.id > ultimoIdMensagem);
+                console.log(`🆕 ${novasMensagens.length} novas mensagens`);
                 
                 if (novasMensagens.length > 0) {
                     novasMensagens.forEach(msg => {
+                        console.log('➕ Adicionando mensagem:', msg);
                         adicionarMensagemNaTela(msg);
                     });
                     
@@ -295,6 +303,7 @@ function carregarMensagens() {
                     scrollToBottom();
                 }
             } else {
+                console.log('📭 Nenhuma mensagem encontrada');
                 $('#noMessages').show();
             }
             
@@ -303,7 +312,9 @@ function carregarMensagens() {
                 $('#online-users').text(`${data.mensagens.length > 0 ? 'Chat ativo' : 'Aguardando mensagens'}`);
             }
         })
-        .catch(error => console.error('Erro ao carregar mensagens:', error));
+        .catch(error => {
+            console.error('❌ Erro ao carregar mensagens:', error);
+        });
 }
 
 function adicionarMensagemNaTela(msg) {
@@ -330,12 +341,17 @@ function adicionarMensagemNaTela(msg) {
 function enviarMensagem() {
     const mensagem = $('#messageInput').val().trim();
     
+    console.log('📤 Tentando enviar mensagem:', mensagem);
+    
     if (!mensagem) {
+        console.log('❌ Mensagem vazia, não enviando');
         return;
     }
     
     // Limpar input
     $('#messageInput').val('');
+    
+    console.log('🔄 Enviando para servidor...');
     
     // Enviar para servidor
     fetch('/api/chat/enviar', {
@@ -346,6 +362,7 @@ function enviarMensagem() {
         body: JSON.stringify({ mensagem: mensagem })
     })
     .then(response => {
+        console.log('📡 Resposta do servidor:', response.status);
         if (response.status === 401) {
             alert('Sessão expirada. Faça login novamente.');
             window.location.href = '/login';
@@ -354,17 +371,23 @@ function enviarMensagem() {
         return response.json();
     })
     .then(data => {
+        console.log('📨 Dados recebidos:', data);
         if (data && data.success) {
+            console.log('✅ Mensagem enviada com sucesso:', data.mensagem);
             adicionarMensagemNaTela(data.mensagem);
             ultimoIdMensagem = data.mensagem.id;
             scrollToBottom();
             $('#noMessages').hide();
         } else if (data && data.error) {
+            console.error('❌ Erro do servidor:', data.error);
             alert('Erro: ' + data.error);
+        } else {
+            console.error('❌ Resposta inválida do servidor:', data);
+            alert('Resposta inválida do servidor');
         }
     })
     .catch(error => {
-        console.error('Erro ao enviar mensagem:', error);
+        console.error('❌ Erro ao enviar mensagem:', error);
         alert('Erro ao enviar mensagem. Tente novamente.');
     });
 }
