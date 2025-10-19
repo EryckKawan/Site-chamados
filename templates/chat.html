@@ -78,10 +78,25 @@
     }
     
     .message-username {
-        font-size: 0.75rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .user-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
         font-weight: bold;
-        color: #075e54;
-        margin-bottom: 3px;
+        color: white;
+        flex-shrink: 0;
     }
     
     .message-text {
@@ -94,6 +109,18 @@
         color: #667781;
         text-align: right;
         margin-top: 3px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 3px;
+    }
+    
+    .message.me .message-bubble {
+        box-shadow: 0 1px 0.5px rgba(0,0,0,0.13);
+    }
+    
+    .message.other .message-bubble {
+        box-shadow: 0 1px 0.5px rgba(0,0,0,0.13);
     }
     
     .chat-input-area {
@@ -205,9 +232,18 @@
                             <span id="online-users">Carregando...</span>
                         </small>
                     </div>
-                    <div class="ms-auto">
-                        <button class="btn btn-sm btn-light" onclick="limparChat()" title="Limpar tela">
-                            <i class="bi bi-trash"></i>
+                    <div class="ms-auto d-flex gap-2">
+                        <button class="btn btn-sm" onclick="novaConversa()" title="Nova Conversa" 
+                                style="background: rgba(255,255,255,0.2); color: white; border: none;">
+                            <i class="bi bi-plus-circle"></i>
+                        </button>
+                        <button class="btn btn-sm" onclick="limparChat()" title="Limpar minha tela"
+                                style="background: rgba(255,255,255,0.2); color: white; border: none;">
+                            <i class="bi bi-brush"></i>
+                        </button>
+                        <button class="btn btn-sm" onclick="apagarTodasMensagens()" title="Apagar todas as mensagens"
+                                style="background: rgba(255,255,255,0.2); color: white; border: none;">
+                            <i class="bi bi-trash-fill"></i>
                         </button>
                     </div>
                 </div>
@@ -227,12 +263,15 @@
                 
                 <!-- Área de Input -->
                 <div class="chat-input-area">
+                    <button class="btn" style="color: #54656f; background: transparent; border: none; font-size: 1.5rem;" title="Emoji">
+                        <i class="bi bi-emoji-smile"></i>
+                    </button>
                     <input type="text" 
                            class="chat-input" 
                            id="messageInput" 
-                           placeholder="Digite sua mensagem..."
+                           placeholder="Digite uma mensagem"
                            autocomplete="off">
-                    <button class="chat-send-btn" onclick="enviarMensagem()">
+                    <button class="chat-send-btn" onclick="enviarMensagem()" title="Enviar mensagem">
                         <i class="bi bi-send-fill"></i>
                     </button>
                 </div>
@@ -302,7 +341,12 @@ function enviarMensagem() {
             adicionarMensagemNaTela(data.mensagem);
             ultimoIdMensagem = data.mensagem.id;
             scrollToBottom();
-            document.getElementById('noMessages').style.display = 'none';
+            
+            // Ocultar mensagem "Nenhuma mensagem ainda" se existir
+            const noMessages = document.getElementById('noMessages');
+            if (noMessages) {
+                noMessages.style.display = 'none';
+            }
         } else if (data && data.error) {
             console.error('❌ Erro do servidor:', data.error);
             alert('Erro: ' + data.error);
@@ -319,9 +363,114 @@ function enviarMensagem() {
 
 function limparChat() {
     if (confirm('Limpar histórico do chat na sua tela? (Não afeta outros usuários)')) {
-        document.getElementById('chatMessages').innerHTML = '';
-        document.getElementById('noMessages').style.display = 'block';
+        const chatMessages = document.getElementById('chatMessages');
+        chatMessages.innerHTML = `
+            <div class="no-messages" id="noMessages">
+                <i class="bi bi-chat-text"></i>
+                <p>Nenhuma mensagem ainda</p>
+                <small class="text-muted">Seja o primeiro a enviar uma mensagem!</small>
+            </div>
+        `;
         ultimoIdMensagem = 0;
+        console.log('🧹 Chat limpo na sua tela');
+    }
+}
+
+function novaConversa() {
+    if (confirm('Iniciar uma nova conversa? Isso limpará o chat para todos os usuários.')) {
+        console.log('🆕 Iniciando nova conversa...');
+        
+        fetch('/api/chat/nova-conversa', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            console.log('📡 Resposta do servidor:', response.status);
+            if (response.status === 401) {
+                alert('Sessão expirada. Faça login novamente.');
+                window.location.href = '/login';
+                return;
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('📨 Dados recebidos:', data);
+            if (data && data.success) {
+                console.log('✅ Nova conversa iniciada');
+                // Limpar a tela local e mostrar mensagem de confirmação
+                ultimoIdMensagem = 0;
+                
+                const chatMessages = document.getElementById('chatMessages');
+                chatMessages.innerHTML = `
+                    <div class="message other">
+                        <div class="message-bubble">
+                            <div class="message-text text-center text-success">
+                                <i class="bi bi-check-circle-fill"></i> Nova conversa iniciada!
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                alert('Nova conversa iniciada! Todas as mensagens anteriores foram removidas.');
+            } else if (data && data.error) {
+                console.error('❌ Erro do servidor:', data.error);
+                alert('Erro: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('❌ Erro ao iniciar nova conversa:', error);
+            alert('Erro ao iniciar nova conversa. Tente novamente.');
+        });
+    }
+}
+
+function apagarTodasMensagens() {
+    if (confirm('⚠️ ATENÇÃO: Isso apagará TODAS as mensagens do chat para TODOS os usuários!\n\nTem certeza que deseja continuar?')) {
+        console.log('🗑️ Apagando todas as mensagens...');
+        
+        fetch('/api/chat/apagar-todas', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            console.log('📡 Resposta do servidor:', response.status);
+            if (response.status === 401) {
+                alert('Sessão expirada. Faça login novamente.');
+                window.location.href = '/login';
+                return;
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('📨 Dados recebidos:', data);
+            if (data && data.success) {
+                console.log('✅ Todas as mensagens apagadas');
+                // Limpar a tela local
+                ultimoIdMensagem = 0;
+                
+                const chatMessages = document.getElementById('chatMessages');
+                chatMessages.innerHTML = `
+                    <div class="no-messages" id="noMessages">
+                        <i class="bi bi-chat-text"></i>
+                        <p>Nenhuma mensagem ainda</p>
+                        <small class="text-muted">Seja o primeiro a enviar uma mensagem!</small>
+                    </div>
+                `;
+                
+                alert('Todas as mensagens foram apagadas com sucesso!');
+            } else if (data && data.error) {
+                console.error('❌ Erro do servidor:', data.error);
+                alert('Erro: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('❌ Erro ao apagar mensagens:', error);
+            alert('Erro ao apagar mensagens. Tente novamente.');
+        });
     }
 }
 
@@ -343,7 +492,12 @@ function carregarMensagens() {
             
             if (data && data.mensagens && data.mensagens.length > 0) {
                 console.log(`📝 ${data.mensagens.length} mensagens encontradas`);
-                $('#noMessages').hide();
+                
+                // Ocultar mensagem "Nenhuma mensagem ainda" se existir
+                const noMessages = document.getElementById('noMessages');
+                if (noMessages) {
+                    noMessages.style.display = 'none';
+                }
                 
                 // Verificar se há novas mensagens
                 const novasMensagens = data.mensagens.filter(m => m.id > ultimoIdMensagem);
@@ -360,12 +514,20 @@ function carregarMensagens() {
                 }
             } else {
                 console.log('📭 Nenhuma mensagem encontrada');
-                $('#noMessages').show();
+                
+                // Mostrar mensagem "Nenhuma mensagem ainda" se existir
+                const noMessages = document.getElementById('noMessages');
+                if (noMessages) {
+                    noMessages.style.display = 'block';
+                }
             }
             
             // Atualizar contador de usuários online (simulado)
             if (data && data.mensagens) {
-                $('#online-users').text(`${data.mensagens.length > 0 ? 'Chat ativo' : 'Aguardando mensagens'}`);
+                const onlineUsers = document.getElementById('online-users');
+                if (onlineUsers) {
+                    onlineUsers.textContent = data.mensagens.length > 0 ? 'Chat ativo' : 'Aguardando mensagens';
+                }
             }
         })
         .catch(error => {
@@ -378,12 +540,43 @@ function adicionarMensagemNaTela(msg) {
     const dataEnvio = new Date(msg.data_envio);
     const horaFormatada = dataEnvio.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
     
+    // Gerar cor única para cada usuário baseado no nome
+    const getUserColor = (username) => {
+        const colors = [
+            '#00a884', '#0088cc', '#8e24aa', '#d32f2f', '#f57c00',
+            '#388e3c', '#0277bd', '#c2185b', '#7b1fa2', '#0097a7'
+        ];
+        let hash = 0;
+        for (let i = 0; i < username.length; i++) {
+            hash = username.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return colors[Math.abs(hash) % colors.length];
+    };
+    
+    // Pegar iniciais do nome
+    const getInitials = (username) => {
+        return username.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    };
+    
+    const userColor = getUserColor(msg.username);
+    const userInitials = getInitials(msg.username);
+    
     const messageHtml = `
         <div class="message ${messageClass}" data-id="${msg.id}">
             <div class="message-bubble">
-                ${!msg.is_me ? `<div class="message-username">${msg.username}</div>` : ''}
+                ${!msg.is_me ? `
+                    <div class="message-username">
+                        <span class="user-avatar" style="background-color: ${userColor}">
+                            ${userInitials}
+                        </span>
+                        <span style="color: ${userColor}">${escapeHtml(msg.username)}</span>
+                    </div>
+                ` : ''}
                 <div class="message-text">${escapeHtml(msg.mensagem)}</div>
-                <div class="message-time">${horaFormatada}</div>
+                <div class="message-time">
+                    ${horaFormatada}
+                    ${msg.is_me ? '<i class="bi bi-check-all" style="color: #4fc3f7; margin-left: 3px;"></i>' : ''}
+                </div>
             </div>
         </div>
     `;
@@ -407,14 +600,6 @@ function marcarComoLidas() {
 function scrollToBottom() {
     const chatMessages = document.getElementById('chatMessages');
     chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-function limparChat() {
-    if (confirm('Limpar histórico do chat na sua tela? (Não afeta outros usuários)')) {
-        $('#chatMessages').empty();
-        $('#noMessages').show();
-        ultimoIdMensagem = 0;
-    }
 }
 
 function escapeHtml(text) {
@@ -461,6 +646,13 @@ function initializeChat() {
         });
     });
 }
+
+// ✅ Versão 3.0 - Clone WhatsApp com identificação de usuários
+// - Avatar colorido por usuário
+// - Nome do usuário em cada mensagem
+// - Cores únicas baseadas no hash do nome
+// - Check duplo azul nas mensagens enviadas
+// - Visual 100% WhatsApp
 </script>
 {% endblock %}
 

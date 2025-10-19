@@ -1302,6 +1302,70 @@ def marcar_lidas():
     
     return jsonify({'success': True})
 
+@app.route('/api/chat/nova-conversa', methods=['POST'])
+def nova_conversa():
+    """Iniciar nova conversa (apagar todas as mensagens)"""
+    print("🆕 Recebida requisição para nova conversa")
+    if 'user_id' not in session:
+        print("❌ Usuário não autenticado")
+        return jsonify({'error': 'Não autenticado'}), 401
+    
+    try:
+        conn = get_db_connection()
+        
+        # Contar mensagens antes de apagar
+        count_before = conn.execute('SELECT COUNT(*) as count FROM chat_mensagens').fetchone()['count']
+        
+        # Apagar todas as mensagens do chat
+        cursor = conn.execute('DELETE FROM chat_mensagens')
+        deleted_count = cursor.rowcount
+        print(f"🗑️ {deleted_count} mensagens apagadas (eram {count_before})")
+        
+        conn.commit()
+        conn.close()
+        
+        print("✅ Nova conversa iniciada com sucesso")
+        return jsonify({
+            'success': True,
+            'message': f'Nova conversa iniciada. {deleted_count} mensagens anteriores foram removidas.'
+        })
+        
+    except Exception as e:
+        print(f"❌ Erro ao iniciar nova conversa: {e}")
+        return jsonify({'error': f'Erro interno: {str(e)}'}), 500
+
+@app.route('/api/chat/apagar-todas', methods=['POST'])
+def apagar_todas_mensagens():
+    """Apagar todas as mensagens do chat"""
+    print("🗑️ Recebida requisição para apagar todas as mensagens")
+    if 'user_id' not in session:
+        print("❌ Usuário não autenticado")
+        return jsonify({'error': 'Não autenticado'}), 401
+    
+    try:
+        conn = get_db_connection()
+        
+        # Contar mensagens antes de apagar
+        count_before = conn.execute('SELECT COUNT(*) as count FROM chat_mensagens').fetchone()['count']
+        
+        # Apagar todas as mensagens do chat
+        cursor = conn.execute('DELETE FROM chat_mensagens')
+        deleted_count = cursor.rowcount
+        print(f"🗑️ {deleted_count} mensagens apagadas (eram {count_before})")
+        
+        conn.commit()
+        conn.close()
+        
+        print("✅ Todas as mensagens apagadas com sucesso")
+        return jsonify({
+            'success': True,
+            'message': f'Todas as mensagens foram apagadas. {deleted_count} mensagens removidas.'
+        })
+        
+    except Exception as e:
+        print(f"❌ Erro ao apagar mensagens: {e}")
+        return jsonify({'error': f'Erro interno: {str(e)}'}), 500
+
 if __name__ == '__main__':
     init_db()
     print("🚀 Sistema de Chamados TI iniciado!")
