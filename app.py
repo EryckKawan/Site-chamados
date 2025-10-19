@@ -330,19 +330,25 @@ def is_admin():
     """Verifica se usuário atual é admin"""
     if 'user_id' not in session:
         return False
-    conn = get_db_connection()
-    user = conn.execute('SELECT role FROM users WHERE id = ?', (session['user_id'],)).fetchone()
-    conn.close()
-    return user and user['role'] == 'admin'
+    try:
+        conn = get_db_connection()
+        user = conn.execute('SELECT role FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+        conn.close()
+        return user is not None and user['role'] == 'admin'
+    except Exception:
+        return False
 
 def is_tech():
     """Verifica se usuário atual é técnico ou admin"""
     if 'user_id' not in session:
         return False
-    conn = get_db_connection()
-    user = conn.execute('SELECT role FROM users WHERE id = ?', (session['user_id'],)).fetchone()
-    conn.close()
-    return user and user['role'] in ['admin', 'tech']
+    try:
+        conn = get_db_connection()
+        user = conn.execute('SELECT role FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+        conn.close()
+        return user is not None and user['role'] in ['admin', 'tech']
+    except Exception:
+        return False
 
 # Função para traduzir roles (labels customizáveis)
 @app.context_processor
@@ -350,11 +356,14 @@ def inject_role_label():
     """Injeta a função role_label nos templates"""
     def role_label(role_key):
         """Retorna o label do role da tabela role_names ou valor padrão"""
-        conn = get_db_connection()
-        result = conn.execute('SELECT label FROM role_names WHERE role_key = ?', (role_key,)).fetchone()
-        conn.close()
-        if result:
-            return result['label']
+        try:
+            conn = get_db_connection()
+            result = conn.execute('SELECT label FROM role_names WHERE role_key = ?', (role_key,)).fetchone()
+            conn.close()
+            if result and 'label' in result.keys():
+                return result['label']
+        except Exception:
+            pass
         # Valores padrão caso não exista na tabela
         defaults = {
             'admin': 'Administrador',
@@ -1043,10 +1052,21 @@ def editar_equipamento(id):
 @login_required
 def perfil():
     """Página de perfil do usuário"""
+    # Validar sessão
+    if 'user_id' not in session or session.get('user_id') is None:
+        flash('Sessão inválida. Faça login novamente.', 'warning')
+        return redirect(url_for('logout'))
+    
     conn = get_db_connection()
     user_row = conn.execute('SELECT * FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+    
+    if not user_row:
+        flash('Usuário não encontrado. Faça login novamente.', 'danger')
+        conn.close()
+        return redirect(url_for('logout'))
+    
     # normalize to dict and add formatted date
-    user = dict(user_row) if user_row else None
+    user = dict(user_row)
     if user:
         ca = user.get('created_at')
         from datetime import datetime
@@ -1082,9 +1102,20 @@ def perfil():
 @login_required
 def editar_perfil():
     """Editar perfil do usuário"""
+    # Validar sessão
+    if 'user_id' not in session or session.get('user_id') is None:
+        flash('Sessão inválida. Faça login novamente.', 'warning')
+        return redirect(url_for('logout'))
+    
     conn = get_db_connection()
     user_row = conn.execute('SELECT * FROM users WHERE id = ?', (session['user_id'],)).fetchone()
-    user = dict(user_row) if user_row else None
+    
+    if not user_row:
+        flash('Usuário não encontrado. Faça login novamente.', 'danger')
+        conn.close()
+        return redirect(url_for('logout'))
+    
+    user = dict(user_row)
 
     # add created_at_fmt for the template
     if user:
