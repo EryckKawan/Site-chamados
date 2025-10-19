@@ -232,26 +232,12 @@
                                 Infraestrutura
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint.startswith('servidor') %}active{% endif %}" 
-                               href="{{ url_for('servidor.listar') }}">
-                                <i class="bi bi-server"></i>
-                                Servidores
-                            </a>
-                        </li>
                         {% if session.role == 'admin' %}
                         <li class="nav-item">
                             <a class="nav-link {% if request.endpoint.startswith('funcao') %}active{% endif %}" 
                                href="{{ url_for('funcao.listar_funcoes') }}">
                                 <i class="bi bi-person-badge"></i>
                                 Funções
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'gerenciar_cargos' %}active{% endif %}" 
-                               href="{{ url_for('gerenciar_cargos') }}">
-                                <i class="bi bi-person-gear"></i>
-                                Gerenciar Cargos
                             </a>
                         </li>
                         {% endif %}

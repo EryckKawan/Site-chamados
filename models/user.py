@@ -35,10 +35,4 @@ class User(UserMixin, db.Model):
     @property
     def is_tech(self):
         return self.role in ['admin', 'tech']
-    
-    @property
-    def can_manage_roles(self):
-        """Verifica se o usuário pode gerenciar cargos e permissões"""
-        # Apenas admin ou usuário com role 'role_manager' pode gerenciar cargos
-        return self.role in ['admin', 'role_manager']
 
