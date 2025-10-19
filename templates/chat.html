@@ -249,7 +249,8 @@ if (typeof $ === 'undefined') {
     script.src = 'https://code.jquery.com/jquery-3.6.0.min.js';
     script.onload = function() {
         console.log('✅ jQuery carregado');
-        initializeChat();
+        // Aguardar um pouco para garantir que o jQuery está totalmente carregado
+        setTimeout(initializeChat, 100);
     };
     document.head.appendChild(script);
 } else {
@@ -422,14 +423,15 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Parar atualização ao sair da página
-$(window).on('beforeunload', function() {
-    if (chatInterval) {
-        clearInterval(chatInterval);
-    }
-});
-
 function initializeChat() {
+    // Verificar se jQuery está disponível antes de usar
+    if (typeof $ === 'undefined') {
+        console.error('❌ jQuery ainda não está disponível');
+        return;
+    }
+    
+    console.log('🚀 Inicializando chat com jQuery');
+    
     // Carregar mensagens ao abrir a página
     $(document).ready(function() {
         carregarMensagens();
@@ -449,6 +451,13 @@ function initializeChat() {
         // Marcar como lidas ao focar na janela
         $(window).focus(function() {
             marcarComoLidas();
+        });
+        
+        // Parar atualização ao sair da página
+        $(window).on('beforeunload', function() {
+            if (chatInterval) {
+                clearInterval(chatInterval);
+            }
         });
     });
 }
