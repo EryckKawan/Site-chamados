@@ -470,6 +470,60 @@ def register():
     
     return render_template('login.html', show_register=True)
 
+@app.route('/admin/novo-usuario', methods=['GET', 'POST'])
+@login_required
+def novo_usuario():
+    """Rota para admins criarem novos usuários"""
+    # Verificar se é admin
+    if session.get('role') != 'admin':
+        flash('Acesso negado! Apenas administradores podem criar usuários.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+        confirm_password = request.form.get('confirm_password', password)
+        role = request.form.get('role', 'user')
+        funcao_id = request.form.get('funcao_id') or None
+        
+        # Validações
+        if password != confirm_password:
+            flash('As senhas não coincidem!', 'danger')
+            return redirect(url_for('novo_usuario'))
+        
+        conn = get_db_connection()
+        
+        # Verificar se usuário já existe
+        if conn.execute('SELECT id FROM users WHERE username = ?', (username,)).fetchone():
+            flash('Nome de usuário já existe!', 'danger')
+            conn.close()
+            return redirect(url_for('novo_usuario'))
+        
+        if conn.execute('SELECT id FROM users WHERE email = ?', (email,)).fetchone():
+            flash('Email já cadastrado!', 'danger')
+            conn.close()
+            return redirect(url_for('novo_usuario'))
+        
+        # Criar usuário
+        password_hash = generate_password_hash(password)
+        conn.execute('''
+            INSERT INTO users (username, email, password_hash, role, funcao_id)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (username, email, password_hash, role, funcao_id))
+        conn.commit()
+        conn.close()
+        
+        flash(f'Usuário {username} criado com sucesso!', 'success')
+        return redirect(url_for('gerenciar_usuarios'))
+    
+    # GET - Mostrar formulário
+    conn = get_db_connection()
+    funcoes = conn.execute('SELECT * FROM funcoes ORDER BY nome').fetchall()
+    conn.close()
+    
+    return render_template('novo_usuario.html', funcoes=funcoes)
+
 @app.route('/logout')
 def logout():
     session.clear()

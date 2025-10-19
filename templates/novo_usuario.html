@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}Novo Usuário{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0"><i class="bi bi-person-plus"></i> Novo Usuário</h2>
+                    <a href="{{ url_for('gerenciar_usuarios') }}" class="btn btn-light btn-sm">
+                        <i class="bi bi-arrow-left"></i> Voltar
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% include 'includes/flash_messages.html' %}
+
+                    <form method="POST" action="{{ url_for('novo_usuario') }}">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="username" class="form-label">Nome de Usuário <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="username" name="username" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="password" class="form-label">Senha <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" id="password" name="password" required minlength="4">
+                                <small class="text-muted">Mínimo 4 caracteres</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="confirm_password" class="form-label">Confirmar Senha <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required minlength="4">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="role" class="form-label">Função/Cargo <span class="text-danger">*</span></label>
+                                <select class="form-select" id="role" name="role" required>
+                                    <option value="user">Usuário</option>
+                                    <option value="administrativo">Administrativo</option>
+                                    <option value="tech">Técnico</option>
+                                    <option value="supervisor">Supervisor</option>
+                                    <option value="diretor">Diretor</option>
+                                    <option value="admin">Administrador</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="funcao_id" class="form-label">Função/Cargo (Detalhado)</label>
+                                <select class="form-select" id="funcao_id" name="funcao_id">
+                                    <option value="">Selecione...</option>
+                                    {% for funcao in funcoes %}
+                                        <option value="{{ funcao.id }}">{{ funcao.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">Opcional - Para organização interna</small>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Informação:</strong> O usuário poderá alterar sua senha após o primeiro login.
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ url_for('gerenciar_usuarios') }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Criar Usuário
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Validar se as senhas coincidem
+document.querySelector('form').addEventListener('submit', function(e) {
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    
+    if (password !== confirmPassword) {
+        e.preventDefault();
+        alert('As senhas não coincidem!');
+        document.getElementById('confirm_password').focus();
+    }
+});
+</script>
+{% endblock %}
+
